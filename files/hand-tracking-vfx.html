@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>✦ ARCANE HANDS ✦</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Courier New', monospace;
+  }
+  #video { display: none; }
+  #threeCanvas {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+  #overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+  #ui {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex; gap: 16px;
+    align-items: center;
+  }
+  .gesture-hint {
+    color: rgba(180,140,255,0.6);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+    transition: opacity 0.5s;
+  }
+  #status {
+    position: fixed; top: 20px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(120,200,255,0.7);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    z-index: 10;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(100,180,255,0.5);
+  }
+  #gesture-name {
+    position: fixed; top: 50px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(200,150,255,0.8);
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    z-index: 10;
+    text-align: center;
+    transition: opacity 0.3s;
+    text-shadow: 0 0 20px rgba(180,100,255,0.8);
+  }
+  #debug-toggle {
+    position: fixed; top: 20px; right: 20px;
+    z-index: 10;
+    color: rgba(100,200,255,0.4);
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border: 1px solid rgba(100,200,255,0.15);
+    text-transform: uppercase;
+    pointer-events: all;
+  }
+  #debug-toggle:hover { color: rgba(100,200,255,0.8); }
+  canvas#debugCanvas {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 3; pointer-events: none;
+    display: none;
+  }
+  #loading {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(150,100,255,0.9);
+    gap: 20px;
+  }
+  #loading .title {
+    font-size: clamp(24px,5vw,48px);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    text-shadow: 0 0 40px rgba(150,100,255,0.8);
+    animation: pulse 2s infinite;
+  }
+  #loading .sub {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: rgba(100,180,255,0.6);
+    text-transform: uppercase;
+  }
+  #loading .bar-wrap {
+    width: 200px; height: 1px;
+    background: rgba(150,100,255,0.2);
+    position: relative; overflow: hidden;
+  }
+  #loading .bar {
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(150,100,255,0.9), transparent);
+    animation: scan 1.5s infinite;
+  }
+  @keyframes scan { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+  @keyframes pulse { 0%,100%{opacity:0.7} 50%{opacity:1} }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="title">✦ Arcane Hands ✦</div>
+  <div class="sub">Initializing Neural Vision</div>
+  <div class="bar-wrap"><div class="bar"></div></div>
+  <div class="sub" id="load-status">Loading MediaPipe...</div>
+</div>
+
+<video id="video" playsinline autoplay muted></video>
+<canvas id="threeCanvas"></canvas>
+<canvas id="overlay"></canvas>
+<canvas id="debugCanvas"></canvas>
+
+<div id="status">◈ ARCANE VISION ACTIVE ◈</div>
+<div id="gesture-name"></div>
+<div id="debug-toggle" onclick="toggleDebug()">⟁ Debug</div>
+
+<div id="ui">
+  <div class="gesture-hint">☛ INDEX · DRAW &nbsp;|&nbsp; ✌ GOJO ORB &nbsp;|&nbsp; ⚡ RIGHT · LIGHTNING &nbsp;|&nbsp; 🌿 LEFT · FLAME &nbsp;|&nbsp; ❤ BOTH · HEART &nbsp;|&nbsp; ⊕ JOIN · PORTAL</div>
+</div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ARCANE HANDS — Ultra Cinematic Hand Tracking VFX System
+//  Architecture: GestureDetector → VFXEngine → Renderer
+// ═══════════════════════════════════════════════════════════════
+
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+let debugMode = false;
+function toggleDebug() {
+  debugMode = !debugMode;
+  document.getElementById('debugCanvas').style.display = debugMode ? 'block' : 'none';
+}
+
+// ─── THREE.JS SETUP ──────────────────────────────────────────
+const threeCanvas = document.getElementById('threeCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W(), H());
+renderer.setClearColor(0x000000, 1);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, W() / H(), 0.1, 1000);
+camera.position.z = 5;
+
+// ─── OVERLAY 2D CANVAS (draw trails) ─────────────────────────
+const overlay = document.getElementById('overlay');
+const ctx = overlay.getContext('2d');
+overlay.width = W(); overlay.height = H();
+
+// ─── DEBUG CANVAS ─────────────────────────────────────────────
+const debugCanvas = document.getElementById('debugCanvas');
+const dctx = debugCanvas.getContext('2d');
+debugCanvas.width = W(); debugCanvas.height = H();
+
+window.addEventListener('resize', () => {
+  renderer.setSize(W(), H());
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  overlay.width = W(); overlay.height = H();
+  debugCanvas.width = W(); debugCanvas.height = H();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  GESTURE DETECTOR
+// ═══════════════════════════════════════════════════════════════
+const GestureDetector = {
+  // Returns normalized [0,1] landmarks mapped to screen coords
+  toLandmark(lm) {
+    return { x: lm.x, y: lm.y, z: lm.z };
+  },
+
+  isFingerExtended(lms, tip, pip) {
+    return lms[tip].y < lms[pip].y;
+  },
+
+  getExtendedFingers(lms) {
+    // [thumb, index, middle, ring, pinky]
+    return [
+      lms[4].x < lms[3].x, // thumb (rough)
+      this.isFingerExtended(lms, 8, 6),
+      this.isFingerExtended(lms, 12, 10),
+      this.isFingerExtended(lms, 16, 14),
+      this.isFingerExtended(lms, 20, 18),
+    ];
+  },
+
+  // Index only extended → DRAW MODE
+  isDrawMode(lms) {
+    const f = this.getExtendedFingers(lms);
+    return f[1] && !f[2] && !f[3] && !f[4];
+  },
+
+  // Index + middle → GOJO MODE
+  isGojoMode(lms) {
+    const f = this.getExtendedFingers(lms);
+    return f[1] && f[2] && !f[3] && !f[4];
+  },
+
+  // All fingers open → ENERGY MODE
+  isOpenHand(lms) {
+    const f = this.getExtendedFingers(lms);
+    return f[1] && f[2] && f[3] && f[4];
+  },
+
+  // Heart: both thumbs up close together (simplified)
+  isHeart(lmsArr) {
+    if (lmsArr.length < 2) return false;
+    const l1 = lmsArr[0], l2 = lmsArr[1];
+    const t1 = { x: l1[4].x, y: l1[4].y };
+    const t2 = { x: l2[4].x, y: l2[4].y };
+    const dist = Math.hypot(t1.x - t2.x, t1.y - t2.y);
+    // Both thumbs close + index fingers also close
+    const i1 = { x: l1[8].x, y: l1[8].y };
+    const i2 = { x: l2[8].x, y: l2[8].y };
+    const idist = Math.hypot(i1.x - i2.x, i1.y - i2.y);
+    return dist < 0.15 && idist < 0.2;
+  },
+
+  // Portal: wrists close together
+  isPortalGesture(lmsArr) {
+    if (lmsArr.length < 2) return false;
+    const w1 = lmsArr[0][0], w2 = lmsArr[1][0];
+    return Math.hypot(w1.x - w2.x, w1.y - w2.y) < 0.12;
+  },
+
+  // Portal forming: hands separated but moving
+  isPortalForming(lmsArr) {
+    if (lmsArr.length < 2) return false;
+    const w1 = lmsArr[0][0], w2 = lmsArr[1][0];
+    const d = Math.hypot(w1.x - w2.x, w1.y - w2.y);
+    return d >= 0.12 && d < 0.5;
+  },
+
+  detect(handsData) {
+    if (!handsData || handsData.length === 0) return { gesture: 'none' };
+
+    const lmsArr = handsData.map(h => h.landmarks);
+    const handedness = handsData.map(h => h.handedness);
+
+    // Priority: two-hand gestures first
+    if (lmsArr.length >= 2) {
+      if (this.isHeart(lmsArr)) return { gesture: 'heart', lmsArr, handedness };
+      if (this.isPortalGesture(lmsArr)) return { gesture: 'portal_open', lmsArr, handedness };
+      if (this.isPortalForming(lmsArr)) return { gesture: 'portal_form', lmsArr, handedness };
+    }
+
+    // Single hand
+    const lms = lmsArr[0];
+    const hand = handedness[0] || 'Right';
+
+    if (this.isGojoMode(lms)) return { gesture: 'gojo', lms, hand };
+    if (this.isDrawMode(lms)) return { gesture: 'draw', lms, hand };
+    if (this.isOpenHand(lms)) {
+      return { gesture: hand.toLowerCase().includes('right') ? 'energy_right' : 'energy_left', lms, hand };
+    }
+
+    return { gesture: 'idle', lms, hand };
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  VFX ENGINE — All visual effects
+// ═══════════════════════════════════════════════════════════════
+const VFX = {
+  // ── Draw Trail System ─────────────────────────────────────
+  trail: {
+    points: [],
+    maxLen: 80,
+    lastPos: null,
+
+    add(x, y) {
+      this.points.push({ x, y, age: 0, life: 1 });
+      if (this.points.length > this.maxLen) this.points.shift();
+    },
+
+    render(ctx, W, H) {
+      this.points.forEach(p => { p.age += 0.018; p.life = Math.max(0, 1 - p.age); });
+      this.points = this.points.filter(p => p.life > 0);
+
+      for (let i = 1; i < this.points.length; i++) {
+        const p0 = this.points[i - 1], p1 = this.points[i];
+        const t = p1.life;
+        const w = t * 8;
+
+        // Outer glow
+        ctx.beginPath();
+        ctx.moveTo(p0.x * W, p0.y * H);
+        ctx.lineTo(p1.x * W, p1.y * H);
+        ctx.strokeStyle = `rgba(120,80,255,${t * 0.3})`;
+        ctx.lineWidth = w * 3;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Core
+        ctx.beginPath();
+        ctx.moveTo(p0.x * W, p0.y * H);
+        ctx.lineTo(p1.x * W, p1.y * H);
+        ctx.strokeStyle = `rgba(180,140,255,${t * 0.9})`;
+        ctx.lineWidth = w;
+        ctx.stroke();
+
+        // Hot core
+        ctx.beginPath();
+        ctx.moveTo(p0.x * W, p0.y * H);
+        ctx.lineTo(p1.x * W, p1.y * H);
+        ctx.strokeStyle = `rgba(240,220,255,${t})`;
+        ctx.lineWidth = w * 0.3;
+        ctx.stroke();
+      }
+    },
+
+    clear() { this.points = []; }
+  },
+
+  // ── Particle System (generic) ──────────────────────────────
+  particles: [],
+
+  spawnParticles(x, y, count, color, spread = 0.05, speed = 0.003) {
+    const limit = 300;
+    const toAdd = Math.min(count, limit - this.particles.length);
+    for (let i = 0; i < toAdd; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const vel = (Math.random() + 0.5) * speed;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * vel + (Math.random() - 0.5) * spread,
+        vy: Math.sin(angle) * vel + (Math.random() - 0.5) * spread,
+        life: 1, decay: 0.012 + Math.random() * 0.02,
+        size: 1 + Math.random() * 3,
+        color,
+      });
+    }
+  },
+
+  updateParticles(ctx, W, H) {
+    this.particles = this.particles.filter(p => p.life > 0);
+    for (const p of this.particles) {
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.00005; // gravity
+      p.life -= p.decay;
+      const a = p.life;
+      ctx.beginPath();
+      ctx.arc(p.x * W, p.y * H, p.size * a, 0, Math.PI * 2);
+      ctx.fillStyle = p.color.replace('$a', a.toFixed(2));
+      ctx.fill();
+    }
+  },
+
+  // ── THREE.JS Objects ────────────────────────────────────────
+  threeObjects: {},
+
+  // Energy aura (right hand - lightning blue)
+  createEnergyRight() {
+    const group = new THREE.Group();
+    scene.add(group);
+
+    // Core sphere
+    const geo = new THREE.SphereGeometry(0.3, 16, 16);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x00aaff, wireframe: true, transparent: true, opacity: 0.5
+    });
+    const core = new THREE.Mesh(geo, mat);
+    group.add(core);
+
+    // Lightning lines
+    const lines = [];
+    for (let i = 0; i < 12; i++) {
+      const points = [];
+      for (let j = 0; j < 6; j++) {
+        points.push(new THREE.Vector3(
+          (Math.random() - 0.5) * 1.5,
+          (Math.random() - 0.5) * 1.5,
+          (Math.random() - 0.5) * 1.5
+        ));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const mat = new THREE.LineBasicMaterial({ color: 0x44ccff, transparent: true, opacity: 0.8 });
+      const line = new THREE.Line(geo, mat);
+      group.add(line);
+      lines.push({ line, mat, geo });
+    }
+
+    // Outer rings
+    for (let i = 0; i < 3; i++) {
+      const rGeo = new THREE.TorusGeometry(0.5 + i * 0.25, 0.02, 8, 32);
+      const rMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.4 });
+      const ring = new THREE.Mesh(rGeo, rMat);
+      ring.rotation.x = Math.random() * Math.PI;
+      ring.rotation.y = Math.random() * Math.PI;
+      group.add(ring);
+    }
+
+    return { group, core, lines };
+  },
+
+  // Energy aura (left hand - fire/green)
+  createEnergyLeft() {
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const geo = new THREE.SphereGeometry(0.25, 12, 12);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, transparent: true, opacity: 0.6 });
+    const core = new THREE.Mesh(geo, mat);
+    group.add(core);
+
+    // Chaotic tendrils
+    const tendrils = [];
+    for (let i = 0; i < 8; i++) {
+      const pts = [];
+      const dir = new THREE.Vector3(Math.random()-0.5,Math.random()-0.5,Math.random()-0.5).normalize();
+      for (let j = 0; j < 8; j++) {
+        pts.push(new THREE.Vector3(
+          dir.x * j * 0.15 + (Math.random()-0.5)*0.2,
+          dir.y * j * 0.15 + (Math.random()-0.5)*0.2,
+          dir.z * j * 0.15 + (Math.random()-0.5)*0.2
+        ));
+      }
+      const g = new THREE.BufferGeometry().setFromPoints(pts);
+      const m = new THREE.LineBasicMaterial({ color: 0x88ff44, transparent: true, opacity: 0.9 });
+      const l = new THREE.Line(g, m);
+      group.add(l);
+      tendrils.push({ l, g, m });
+    }
+
+    return { group, core, tendrils };
+  },
+
+  // Gojo orb
+  createGojoOrb() {
+    const group = new THREE.Group();
+    scene.add(group);
+
+    // Main sphere
+    const geo = new THREE.SphereGeometry(0.5, 32, 32);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x8800ff, wireframe: false, transparent: true, opacity: 0.15 });
+    const sphere = new THREE.Mesh(geo, mat);
+    group.add(sphere);
+
+    // Wireframe overlay
+    const wGeo = new THREE.SphereGeometry(0.52, 16, 16);
+    const wMat = new THREE.MeshBasicMaterial({ color: 0xaa44ff, wireframe: true, transparent: true, opacity: 0.5 });
+    const wire = new THREE.Mesh(wGeo, wMat);
+    group.add(wire);
+
+    // Rotating rings
+    const rings = [];
+    for (let i = 0; i < 4; i++) {
+      const rGeo = new THREE.TorusGeometry(0.6 + i * 0.1, 0.015, 6, 48);
+      const rMat = new THREE.MeshBasicMaterial({ color: 0xcc88ff, transparent: true, opacity: 0.7 });
+      const ring = new THREE.Mesh(rGeo, rMat);
+      ring.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+      group.add(ring);
+      rings.push(ring);
+    }
+
+    // Point light
+    const light = new THREE.PointLight(0x9933ff, 2, 5);
+    group.add(light);
+
+    return { group, sphere, wire, rings, light };
+  },
+
+  // Portal
+  createPortal() {
+    const group = new THREE.Group();
+    scene.add(group);
+
+    // Vortex rings
+    const rings = [];
+    for (let i = 0; i < 8; i++) {
+      const r = 0.3 + i * 0.12;
+      const geo = new THREE.TorusGeometry(r, 0.02, 6, 48);
+      const hue = 0.7 + i * 0.04; // purple to blue
+      const mat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color().setHSL(hue, 1, 0.6),
+        transparent: true, opacity: 0.8 - i * 0.08
+      });
+      const ring = new THREE.Mesh(geo, mat);
+      group.add(ring);
+      rings.push({ ring, speed: 0.05 + i * 0.03, dir: i % 2 ? 1 : -1 });
+    }
+
+    // Center glow
+    const cGeo = new THREE.SphereGeometry(0.15, 16, 16);
+    const cMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+    const center = new THREE.Mesh(cGeo, cMat);
+    group.add(center);
+
+    return { group, rings, center };
+  },
+
+  // Heart (2D on overlay canvas)
+  drawHeart(ctx, cx, cy, size, alpha, time) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    const pulse = 1 + Math.sin(time * 3) * 0.08;
+    ctx.scale(pulse, pulse);
+
+    // Draw heart shape
+    const s = size;
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.3);
+    ctx.bezierCurveTo(-s, -s * 1.1, -s * 1.8, s * 0.3, 0, s);
+    ctx.bezierCurveTo(s * 1.8, s * 0.3, s, -s * 1.1, 0, -s * 0.3);
+
+    // Glow layers
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = `rgba(255,80,120,${alpha})`;
+    const grad = ctx.createLinearGradient(0, -s, 0, s);
+    grad.addColorStop(0, `rgba(255,100,180,${alpha * 0.9})`);
+    grad.addColorStop(1, `rgba(200,30,80,${alpha * 0.7})`);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Hot outline
+    ctx.strokeStyle = `rgba(255,200,220,${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN LOOP STATE
+// ═══════════════════════════════════════════════════════════════
+const State = {
+  hands: [],
+  currentGesture: 'none',
+  gestureTimer: 0,
+  time: 0,
+  activeObjects: {},
+  drawMode: false,
+  lastPos: null,
+  lastFastPos: null,
+  speed: 0,
+
+  // Smooth landmark positions
+  smoothLms: [],
+  smoothFactor: 0.35,
+
+  smoothPos(newLms, idx) {
+    if (!this.smoothLms[idx]) this.smoothLms[idx] = newLms.slice();
+    const s = this.smoothLms[idx];
+    for (let i = 0; i < newLms.length; i++) {
+      if (!s[i]) { s[i] = { ...newLms[i] }; continue; }
+      s[i].x += (newLms[i].x - s[i].x) * this.smoothFactor;
+      s[i].y += (newLms[i].y - s[i].y) * this.smoothFactor;
+      s[i].z += (newLms[i].z - s[i].z) * this.smoothFactor;
+    }
+    return s;
+  },
+
+  // Convert normalized landmark to screen XY
+  toScreen(lm) {
+    return { x: (1 - lm.x) * W(), y: lm.y * H() };
+  },
+
+  // Convert normalized landmark to Three.js world coords
+  toWorld(lm) {
+    return {
+      x: (0.5 - lm.x) * 10,
+      y: (0.5 - lm.y) * 8,
+      z: lm.z * -5
+    };
+  }
+};
+
+// Remove a Three.js object group
+function removeObj(key) {
+  if (State.activeObjects[key]) {
+    scene.remove(State.activeObjects[key].group);
+    delete State.activeObjects[key];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GESTURE NAME DISPLAY
+// ═══════════════════════════════════════════════════════════════
+let gestureNameTimeout;
+function showGestureName(name) {
+  const el = document.getElementById('gesture-name');
+  el.textContent = name;
+  el.style.opacity = '1';
+  clearTimeout(gestureNameTimeout);
+  gestureNameTimeout = setTimeout(() => { el.style.opacity = '0'; }, 2000);
+}
+
+const GESTURE_LABELS = {
+  draw: '✦ DRAW MODE ✦',
+  gojo: '◈ INFINITY ◈',
+  energy_right: '⚡ LIGHTNING ⚡',
+  energy_left: '🌿 WILDFIRE 🌿',
+  heart: '♥ HEART ♥',
+  portal_form: '◉ PORTAL FORMING ◉',
+  portal_open: '⊕ PORTAL OPEN ⊕',
+  idle: '',
+  none: '',
+};
+
+let lastGesture = '';
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN RENDER LOOP
+// ═══════════════════════════════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+  State.time += 0.016;
+  const t = State.time;
+
+  // Fade overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  ctx.fillRect(0, 0, W(), H());
+
+  const handsData = State.hands;
+  const detected = GestureDetector.detect(handsData);
+  const gesture = detected.gesture;
+
+  if (gesture !== lastGesture && gesture !== 'none') {
+    showGestureName(GESTURE_LABELS[gesture] || '');
+    lastGesture = gesture;
+  }
+
+  // Clear unused effects
+  const keep = new Set([gesture]);
+  if (gesture !== 'draw') { VFX.trail.clear(); }
+  if (gesture !== 'energy_right') removeObj('energyRight');
+  if (gesture !== 'energy_left') removeObj('energyLeft');
+  if (gesture !== 'gojo') removeObj('gojo');
+  if (gesture !== 'portal_open' && gesture !== 'portal_form') removeObj('portal');
+
+  // ── HAND AURA (always on when hands detected) ─────────────
+  if (handsData.length > 0) {
+    handsData.forEach((hd, idx) => {
+      const lms = State.smoothPos(hd.landmarks, idx);
+      const wrist = lms[0];
+      const sc = State.toScreen(wrist);
+
+      // Aura glow on wrist
+      const isRight = (hd.handedness || '').toLowerCase().includes('right');
+      const auraColor = isRight ? 'rgba(60,150,255,' : 'rgba(60,255,150,';
+      const grad = ctx.createRadialGradient(sc.x, sc.y, 0, sc.x, sc.y, 80);
+      grad.addColorStop(0, auraColor + '0.15)');
+      grad.addColorStop(1, auraColor + '0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, 80, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // ── DRAW MODE ─────────────────────────────────────────────
+  if (gesture === 'draw' && detected.lms) {
+    const lms = State.smoothPos(detected.lms, 0);
+    const tip = lms[8]; // index tip
+    const sc = { x: (1 - tip.x), y: tip.y };
+
+    VFX.trail.add(sc.x, sc.y);
+    VFX.trail.render(ctx, W(), H());
+
+    // Speed-based particle burst
+    if (State.lastPos) {
+      const dx = sc.x - State.lastPos.x, dy = sc.y - State.lastPos.y;
+      const speed = Math.hypot(dx, dy);
+      if (speed > 0.004) {
+        VFX.spawnParticles(sc.x, sc.y, 3, 'rgba(160,100,255,$a)', 0.02, 0.002);
+      }
+    }
+    State.lastPos = sc;
+  } else {
+    State.lastPos = null;
+  }
+
+  // ── GOJO ORB ─────────────────────────────────────────────
+  if (gesture === 'gojo' && detected.lms) {
+    if (!State.activeObjects.gojo) {
+      State.activeObjects.gojo = VFX.createGojoOrb();
+    }
+    const obj = State.activeObjects.gojo;
+    const lms = State.smoothPos(detected.lms, 0);
+    const mid = lms[9]; // palm center
+    const w = State.toWorld(mid);
+    obj.group.position.set(w.x, w.y, 0);
+
+    // Animate rings
+    obj.rings.forEach((ring, i) => {
+      ring.rotation.x += 0.02 * (i + 1);
+      ring.rotation.y += 0.015 * (i + 1);
+      ring.rotation.z += 0.01 * (i + 1);
+    });
+    obj.wire.rotation.y += 0.03;
+    obj.wire.rotation.x += 0.02;
+
+    // Ripple particles
+    VFX.spawnParticles(1 - mid.x, mid.y, 2, 'rgba(180,100,255,$a)', 0.08, 0.001);
+
+    // Draw distortion halo on 2D canvas
+    const sc = State.toScreen(mid);
+    for (let r = 0; r < 3; r++) {
+      const rad = 60 + r * 30 + Math.sin(t * 3 + r) * 10;
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, rad, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(160,80,255,${0.3 - r * 0.08})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // ── RIGHT HAND LIGHTNING ─────────────────────────────────
+  if (gesture === 'energy_right' && detected.lms) {
+    if (!State.activeObjects.energyRight) {
+      State.activeObjects.energyRight = VFX.createEnergyRight();
+    }
+    const obj = State.activeObjects.energyRight;
+    const lms = State.smoothPos(detected.lms, 0);
+    const palm = lms[9];
+    const w = State.toWorld(palm);
+    obj.group.position.lerp(new THREE.Vector3(w.x, w.y, 0), 0.2);
+    obj.core.rotation.x += 0.05; obj.core.rotation.y += 0.07;
+
+    // Regen lightning lines
+    obj.lines.forEach(({ line, geo }, i) => {
+      if (Math.random() < 0.3) {
+        const pts = [];
+        for (let j = 0; j < 6; j++) {
+          pts.push(new THREE.Vector3(
+            (Math.random()-0.5)*1.8 + Math.cos(t*2+i)*0.3,
+            (Math.random()-0.5)*1.8 + Math.sin(t*2+i)*0.3,
+            (Math.random()-0.5)*1.8
+          ));
+        }
+        geo.setFromPoints(pts);
+        geo.attributes.position.needsUpdate = true;
+      }
+    });
+
+    // 2D lightning sparks
+    const sc = State.toScreen(palm);
+    for (let s = 0; s < 3; s++) {
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 60;
+      ctx.beginPath();
+      ctx.moveTo(sc.x, sc.y);
+      const mx = sc.x + Math.cos(ang) * dist * 0.5 + (Math.random()-0.5)*30;
+      const my = sc.y + Math.sin(ang) * dist * 0.5 + (Math.random()-0.5)*30;
+      ctx.lineTo(mx, my);
+      ctx.lineTo(mx + (Math.random()-0.5)*20, my + (Math.random()-0.5)*20);
+      ctx.lineTo(sc.x + Math.cos(ang)*dist, sc.y + Math.sin(ang)*dist);
+      ctx.strokeStyle = `rgba(100,200,255,${Math.random() * 0.8})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    VFX.spawnParticles(1-palm.x, palm.y, 4, 'rgba(80,180,255,$a)', 0.06, 0.002);
+  }
+
+  // ── LEFT HAND FIRE/SMOKE ─────────────────────────────────
+  if (gesture === 'energy_left' && detected.lms) {
+    if (!State.activeObjects.energyLeft) {
+      State.activeObjects.energyLeft = VFX.createEnergyLeft();
+    }
+    const obj = State.activeObjects.energyLeft;
+    const lms = State.smoothPos(detected.lms, 0);
+    const palm = lms[9];
+    const w = State.toWorld(palm);
+    obj.group.position.lerp(new THREE.Vector3(w.x, w.y, 0), 0.2);
+    obj.core.rotation.x += 0.08; obj.core.rotation.z += 0.05;
+
+    // Regen tendrils
+    obj.tendrils.forEach(({ l, g }, i) => {
+      if (Math.random() < 0.4) {
+        const dir = new THREE.Vector3(Math.random()-0.5,Math.random()-0.5,Math.random()-0.5).normalize();
+        const pts = [];
+        for (let j = 0; j < 8; j++) {
+          pts.push(new THREE.Vector3(
+            dir.x*j*0.18+(Math.random()-0.5)*0.25,
+            dir.y*j*0.18+(Math.random()-0.5)*0.25,
+            dir.z*j*0.18
+          ));
+        }
+        g.setFromPoints(pts);
+        g.attributes.position.needsUpdate = true;
+      }
+    });
+
+    // 2D fire particles (upward drift)
+    const sc = State.toScreen(palm);
+    VFX.spawnParticles(1-palm.x, palm.y, 5, 'rgba(80,255,120,$a)', 0.05, 0.002);
+    // Extra orange fire
+    for (let f = 0; f < 3; f++) {
+      VFX.spawnParticles(
+        1-palm.x + (Math.random()-0.5)*0.05,
+        palm.y + (Math.random()-0.5)*0.03,
+        2, 'rgba(255,180,40,$a)', 0.04, 0.0015
+      );
+    }
+    // Fire rings on canvas
+    for (let r = 0; r < 3; r++) {
+      const rad = 40 + r * 20 + Math.sin(t * 4 + r) * 8;
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, rad, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(60,255,100,${0.25 - r * 0.07})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // ── HEART MODE ───────────────────────────────────────────
+  if (gesture === 'heart' && detected.lmsArr) {
+    const lms1 = State.smoothPos(detected.lmsArr[0], 0);
+    const lms2 = State.smoothPos(detected.lmsArr[1], 1);
+    // Center between two thumbs
+    const cx = ((1-lms1[4].x) + (1-lms2[4].x)) / 2 * W();
+    const cy = (lms1[4].y + lms2[4].y) / 2 * H();
+
+    VFX.drawHeart(ctx, cx, cy, 80, 0.9, t);
+
+    // Heart particles
+    const hx = ((1-lms1[4].x) + (1-lms2[4].x)) / 2;
+    const hy = (lms1[4].y + lms2[4].y) / 2;
+    VFX.spawnParticles(hx, hy, 8, 'rgba(255,100,150,$a)', 0.12, 0.0015);
+
+    // Glow overlay
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 200);
+    grad.addColorStop(0, 'rgba(255,80,120,0.1)');
+    grad.addColorStop(1, 'rgba(255,80,120,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 200, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── PORTAL ───────────────────────────────────────────────
+  if ((gesture === 'portal_form' || gesture === 'portal_open') && detected.lmsArr) {
+    if (!State.activeObjects.portal) {
+      State.activeObjects.portal = VFX.createPortal();
+    }
+    const obj = State.activeObjects.portal;
+    const lms1 = State.smoothPos(detected.lmsArr[0], 0);
+    const lms2 = State.smoothPos(detected.lmsArr[1], 1);
+    const cx = (lms1[0].x + lms2[0].x) / 2;
+    const cy = (lms1[0].y + lms2[0].y) / 2;
+    const dist = Math.hypot(lms1[0].x - lms2[0].x, lms1[0].y - lms2[0].y);
+
+    const w = State.toWorld({ x: cx, y: cy, z: 0 });
+    obj.group.position.lerp(new THREE.Vector3(w.x, w.y, 0), 0.15);
+
+    // Scale portal with hand distance
+    const scale = gesture === 'portal_open' ? 1 : Math.max(0.1, 1 - dist * 3);
+    obj.group.scale.setScalar(scale * (1 + Math.sin(t * 2) * 0.05));
+
+    // Spin rings
+    obj.rings.forEach(({ ring, speed, dir }) => {
+      ring.rotation.z += speed * dir;
+      ring.rotation.x += speed * 0.3 * dir;
+    });
+
+    // Particle suction
+    const scx = (1 - cx), scy = cy;
+    VFX.spawnParticles(scx, scy, 6, 'rgba(120,80,255,$a)', 0.15, 0.003);
+
+    // Energy beam between hands
+    if (gesture === 'portal_form') {
+      const s1 = State.toScreen(lms1[0]);
+      const s2 = State.toScreen(lms2[0]);
+      // Flip x
+      s1.x = W() - s1.x; s2.x = W() - s2.x;
+      ctx.beginPath();
+      ctx.moveTo(s1.x, s1.y);
+      ctx.lineTo(s2.x, s2.y);
+      ctx.strokeStyle = `rgba(160,100,255,${0.5 + Math.sin(t*8)*0.3})`;
+      ctx.lineWidth = 3 + Math.sin(t*10)*2;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = 'rgba(160,100,255,0.8)';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // ── UPDATE PARTICLES ─────────────────────────────────────
+  VFX.updateParticles(ctx, W(), H());
+
+  // ── DEBUG LANDMARKS ──────────────────────────────────────
+  if (debugMode && handsData.length > 0) {
+    dctx.clearRect(0, 0, W(), H());
+    handsData.forEach((hd, idx) => {
+      const lms = hd.landmarks;
+      lms.forEach((lm, i) => {
+        const sx = (1 - lm.x) * W(), sy = lm.y * H();
+        dctx.beginPath();
+        dctx.arc(sx, sy, 4, 0, Math.PI * 2);
+        dctx.fillStyle = idx === 0 ? 'rgba(100,200,255,0.8)' : 'rgba(100,255,150,0.8)';
+        dctx.fill();
+        dctx.fillStyle = 'white';
+        dctx.font = '9px monospace';
+        dctx.fillText(i, sx + 5, sy - 5);
+      });
+      // Connections
+      const connections = [
+        [0,1],[1,2],[2,3],[3,4],
+        [0,5],[5,6],[6,7],[7,8],
+        [0,9],[9,10],[10,11],[11,12],
+        [0,13],[13,14],[14,15],[15,16],
+        [0,17],[17,18],[18,19],[19,20],
+        [5,9],[9,13],[13,17]
+      ];
+      connections.forEach(([a, b]) => {
+        const la = lms[a], lb = lms[b];
+        dctx.beginPath();
+        dctx.moveTo((1-la.x)*W(), la.y*H());
+        dctx.lineTo((1-lb.x)*W(), lb.y*H());
+        dctx.strokeStyle = 'rgba(100,200,255,0.4)';
+        dctx.lineWidth = 1;
+        dctx.stroke();
+      });
+    });
+  }
+
+  // ── RENDER THREE.JS ───────────────────────────────────────
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MEDIAPIPE SETUP
+// ═══════════════════════════════════════════════════════════════
+async function initMediaPipe() {
+  const setStatus = (t) => { document.getElementById('load-status').textContent = t; };
+
+  setStatus('Loading MediaPipe Hands...');
+
+  const hands = new Hands({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6,
+  });
+
+  hands.onResults((results) => {
+    State.hands = [];
+    if (results.multiHandLandmarks) {
+      results.multiHandLandmarks.forEach((lms, i) => {
+        const handedness = results.multiHandedness?.[i]?.label || 'Right';
+        State.hands.push({ landmarks: lms, handedness });
+      });
+    }
+  });
+
+  setStatus('Requesting camera access...');
+  const video = document.getElementById('video');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+    video.play();
+  } catch (e) {
+    setStatus('Camera access denied. Please allow camera permissions.');
+    return;
+  }
+
+  setStatus('Calibrating neural vision...');
+
+  // Use Camera utility for frame feeding
+  const camera = new Camera(video, {
+    onFrame: async () => {
+      await hands.send({ image: video });
+    },
+    width: 640, height: 480
+  });
+
+  await camera.start();
+  setStatus('Active');
+
+  // Hide loading screen
+  setTimeout(() => {
+    const loading = document.getElementById('loading');
+    loading.style.transition = 'opacity 1s';
+    loading.style.opacity = '0';
+    setTimeout(() => loading.style.display = 'none', 1000);
+  }, 500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════════════
+animate();
+initMediaPipe().catch(console.error);
+
+// Adapt particle count based on FPS
+let lastFPS = performance.now(), fps = 60;
+setInterval(() => {
+  const now = performance.now();
+  fps = 1000 / (now - lastFPS);
+  lastFPS = now;
+  if (fps < 30) {
+    VFX.particles.splice(0, 50); // drop oldest
+  }
+}, 1000);
+</script>
+</body>
+</html>

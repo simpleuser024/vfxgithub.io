@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Clone Jutsu Camera</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: black;
+}
+
+/* FULL SCREEN CAMERA */
+video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+
+  /* FIX MIRROR (important) */
+  transform: scaleX(-1);
+}
+
+/* UI */
+#text {
+  position: fixed;
+  bottom: 40px;
+  width: 100%;
+  text-align: center;
+  font-size: 28px;
+  color: white;
+  font-family: Arial;
+  z-index: 10;
+}
+
+/* CLONE STYLE */
+.clone {
+  position: fixed;
+  width: 200px;
+  height: 300px;
+  background: rgba(0, 150, 255, 0.4);
+  border: 2px solid cyan;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pop 0.4s ease;
+  backdrop-filter: blur(5px);
+}
+
+@keyframes pop {
+  from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay playsinline></video>
+
+<div id="text">Show Shadow Clone Hand Sign</div>
+
+<script>
+const video = document.getElementById("video");
+const text = document.getElementById("text");
+
+let clones = [];
+
+/* CAMERA FULL SCREEN FIX */
+navigator.mediaDevices.getUserMedia({
+  video: {
+    facingMode: "user",
+    width: { ideal: 1920 },
+    height: { ideal: 1080 }
+  }
+})
+.then(stream => {
+  video.srcObject = stream;
+});
+
+/* DEMO TRIGGER (replace with AI hand detection later) */
+setInterval(() => {
+  triggerClone();
+}, 5000);
+
+/* CLONE SYSTEM */
+function triggerClone() {
+  text.innerText = "⚡ CLONE JUTSU ACTIVATED";
+
+  // remove old clones
+  clones.forEach(c => c.remove());
+  clones = [];
+
+  for (let i = 0; i < 3; i++) {
+    let clone = document.createElement("div");
+    clone.className = "clone";
+
+    clone.style.left = (50 + (i - 1) * 20) + "%";
+    clone.style.top = (40 + Math.random() * 5) + "%";
+
+    document.body.appendChild(clone);
+    clones.push(clone);
+  }
+
+  setTimeout(() => {
+    text.innerText = "Show Shadow Clone Hand Sign";
+  }, 1500);
+}
+</script>
+
+</body>
+</html>
