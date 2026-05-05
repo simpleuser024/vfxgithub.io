@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>📖 Complete Grimoire Library | Spellbook Vault 📖</title>
-  <!-- Three.js + GSAP + Font Awesome -->
+  <title>📖 Ultimate Cloud Grimoire | Spell Library with Groups 📖</title>
+  <!-- Three.js + GSAP -->
   <script type="importmap">
     {
       "imports": {
@@ -13,583 +13,260 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Poppins', 'Segoe UI', 'Orbitron', monospace;
       overflow: hidden;
       background: #0a0510;
-      color: #ffffff;
-    }
-
-    /* 3D Canvas Background */
-    #canvas-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-    }
-
-    /* Loading Overlay */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #0a0510;
-      z-index: 300;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .loader {
-      width: 60px;
-      height: 60px;
-      border: 3px solid #ff66cc;
-      border-top: 3px solid #00ffff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Enter Overlay - Book Cover (User adds their image) */
-    .enter-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 200;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transform-origin: left center;
-      transform-style: preserve-3d;
-      background: #0a0510;
-    }
-
-    .cover-bg {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      filter: brightness(0.6);
-    }
-
-    .cover-content {
-      position: relative;
-      text-align: center;
-      z-index: 10;
-      animation: coverFloat 2s infinite alternate;
-      background: rgba(0,0,0,0.5);
-      padding: 2rem;
-      border-radius: 30px;
-      backdrop-filter: blur(10px);
-    }
-
-    @keyframes coverFloat {
-      0% { transform: translateY(0px); filter: drop-shadow(0 0 20px #ff44cc);}
-      100% { transform: translateY(-15px); filter: drop-shadow(0 0 50px #00ffff);}
-    }
-
-    .cover-content h1 {
-      font-size: 3rem;
-      background: linear-gradient(135deg, #ffcc44, #ff66cc, #00ffff);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      letter-spacing: 8px;
-    }
-
-    .enter-btn {
-      margin-top: 2rem;
-      background: linear-gradient(145deg, #2a1a5e, #120a30);
-      border: 2px solid #ff66cc;
-      padding: 0.8rem 2rem;
-      border-radius: 60px;
       color: white;
-      font-size: 1.2rem;
+    }
+    #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+    /* App Container */
+    .app-container { position: relative; z-index: 10; width: 100%; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Custom Tab Bar */
+    .custom-tabs {
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(12px);
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid rgba(255,102,204,0.5);
+      flex-wrap: wrap;
+      z-index: 20;
+    }
+    .tab-btn {
+      background: rgba(20,10,40,0.8);
+      border: 1px solid #ff66cc;
+      padding: 0.5rem 1rem;
+      border-radius: 30px;
+      color: white;
       cursor: pointer;
       transition: 0.3s;
     }
+    .tab-btn.active { background: linear-gradient(135deg, #ff66cc, #00ffff); border-color: cyan; box-shadow: 0 0 15px cyan; }
+    .tab-btn:hover { transform: translateY(-2px); }
 
-    /* Main Grimoire UI */
-    .grimoire-ui {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      opacity: 0;
-      transition: opacity 1s ease;
-      pointer-events: none;
-      position: relative;
-      z-index: 10;
-    }
+    /* Main Content */
+    .main-content { flex: 1; overflow-y: auto; padding: 1rem; position: relative; }
+    .main-content::-webkit-scrollbar { width: 6px; }
+    .main-content::-webkit-scrollbar-track { background: #1a0f2e; border-radius: 10px; }
+    .main-content::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #ff66cc, #00ffff); border-radius: 10px; }
 
-    .grimoire-ui.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    /* Page View */
+    .page-view { display: none; animation: fadeIn 0.4s ease; }
+    .page-view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Header */
-    .book-header {
-      text-align: center;
-      padding: 0.8rem;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(10px);
-      border-bottom: 2px solid rgba(255, 102, 204, 0.5);
-    }
-
-    .book-title {
-      font-size: 1.3rem;
-      letter-spacing: 2px;
-    }
+    /* Custom Background Controls */
+    .bg-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+    .bg-input { background: rgba(0,0,0,0.7); border: 1px solid #ff66cc; padding: 0.4rem 0.8rem; border-radius: 30px; color: white; flex: 1; }
 
     /* Toolbar */
-    .toolbar {
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
-      padding: 0.5rem 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      justify-content: center;
-      border-bottom: 1px solid rgba(0,255,255,0.3);
-    }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; background: rgba(0,0,0,0.5); padding: 0.8rem; border-radius: 30px; align-items: center; }
+    .search-input { background: rgba(0,0,0,0.7); border: 1px solid #ff66cc; padding: 0.4rem 0.8rem; border-radius: 30px; color: white; flex: 1; min-width: 150px; }
+    .filter-select, .sort-select { background: rgba(0,0,0,0.7); border: 1px solid #ff66cc; padding: 0.4rem 0.8rem; border-radius: 30px; color: white; cursor: pointer; }
 
-    .search-box {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(0,0,0,0.8);
-      padding: 0.3rem 1rem;
-      border-radius: 50px;
-      border: 1px solid #ff66cc;
-    }
-
-    .search-box input {
-      background: transparent;
-      border: none;
-      color: white;
-      padding: 0.4rem;
-      outline: none;
-    }
-
-    .filter-select, .sort-select {
-      background: rgba(0,0,0,0.8);
-      border: 1px solid #ff66cc;
-      padding: 0.3rem 1rem;
-      border-radius: 50px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .view-toggle {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .view-btn {
-      background: rgba(0,0,0,0.8);
-      border: 1px solid #ff66cc;
-      padding: 0.3rem 1rem;
-      border-radius: 50px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .view-btn.active {
-      background: #ff66cc;
-      border-color: cyan;
-    }
-
-    /* Stats Bar */
-    .stats-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.4rem 1rem;
-      background: rgba(0, 0, 0, 0.5);
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .sync-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(0,0,0,0.6);
-      padding: 0.2rem 0.8rem;
-      border-radius: 30px;
-    }
-
-    .sync-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #00ff00;
-      animation: pulse 1.5s infinite;
-    }
-
-    /* Page Container - Full Page Size */
-    .page-container {
-      flex: 1;
-      position: relative;
-      overflow-y: auto;
-      padding: 1rem;
-    }
-
-    .page-container::-webkit-scrollbar {
-      width: 8px;
-    }
-    .page-container::-webkit-scrollbar-track {
-      background: #1a0f2e;
-    }
-    .page-container::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #ff66cc, #00ffff);
-      border-radius: 10px;
-    }
-
-    /* Groups Container */
-    .groups-container {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
-
-    .group-card {
-      background: rgba(20, 10, 40, 0.85);
-      backdrop-filter: blur(12px);
-      border-radius: 30px;
-      padding: 1.2rem;
-      border: 1px solid rgba(0, 255, 255, 0.4);
-      animation: fadeIn 0.4s ease;
-    }
-
-    .group-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid rgba(255,102,204,0.5);
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .group-title {
-      font-size: 1.3rem;
-      font-weight: bold;
-      background: linear-gradient(135deg, #ffcc66, #ff66cc);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .group-actions {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    /* Spells Grid */
-    .spells-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-
+    /* Spells Grid - Full Page Size */
+    .spells-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
     .spell-card {
-      background: linear-gradient(145deg, rgba(26, 15, 46, 0.95), rgba(10, 5, 24, 0.95));
+      background: linear-gradient(145deg, rgba(26,15,46,0.9), rgba(10,5,24,0.9));
       border-radius: 20px;
       padding: 1rem;
       border-left: 4px solid #ff66cc;
-      transition: all 0.3s;
+      transition: 0.3s;
       cursor: pointer;
     }
-
-    .spell-card:hover {
-      transform: translateY(-5px);
-      border-left-color: cyan;
-      box-shadow: 0 0 25px cyan;
-    }
-
-    .spell-icon {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .spell-name {
-      font-size: 1rem;
-      font-weight: bold;
-      margin-bottom: 0.3rem;
-      word-break: break-word;
-    }
-
-    .spell-type-badge {
-      display: inline-block;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      font-size: 0.65rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .type-file { background: #00aacc; }
-    .type-image { background: #7a3a9a; }
-    .type-video { background: #cc6633; }
-    .type-link { background: #33aa66; }
-    .type-note { background: #ffaa33; }
-
-    .spell-preview {
-      max-width: 100%;
-      border-radius: 12px;
-      margin-top: 0.5rem;
-      max-height: 150px;
-      object-fit: cover;
-    }
-
-    .spell-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.8rem;
-      flex-wrap: wrap;
-    }
-
-    .spell-btn {
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 0.7rem;
-      transition: 0.2s;
-    }
-
+    .spell-card:hover { transform: translateY(-5px); border-left-color: cyan; box-shadow: 0 0 25px cyan; }
+    .spell-emoji { font-size: 2.5rem; text-align: center; filter: drop-shadow(0 0 8px magenta); }
+    .spell-name { font-size: 1rem; font-weight: bold; text-align: center; margin: 0.5rem 0; color: white; }
+    .spell-type { font-size: 0.7rem; text-align: center; color: #aaccff; }
+    .spell-preview { margin-top: 0.5rem; text-align: center; }
+    .spell-preview img, .spell-preview video { max-width: 100%; max-height: 100px; border-radius: 10px; object-fit: cover; }
+    .spell-actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
+    .spell-btn { flex: 1; padding: 0.3rem; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
     .cast-btn { background: #00aacc; color: white; }
     .preview-btn { background: #7a3a9a; color: white; }
     .edit-btn { background: #ffaa33; color: black; }
     .delete-btn { background: #cc3366; color: white; }
 
-    /* Add Section */
-    .add-section {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(16px);
-      padding: 0.8rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: center;
-      border-top: 1px solid rgba(0, 255, 255, 0.4);
-    }
-
-    .add-input {
-      background: rgba(0, 0, 0, 0.8);
+    /* Group Cards */
+    .group-card {
+      background: linear-gradient(145deg, rgba(40,20,60,0.9), rgba(20,10,40,0.9));
+      border-radius: 20px;
+      padding: 1rem;
+      margin-bottom: 1rem;
       border: 1px solid #ff66cc;
-      padding: 0.4rem 0.8rem;
-      border-radius: 50px;
-      color: white;
-      font-family: monospace;
-      font-size: 0.8rem;
     }
+    .group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem; }
+    .group-name { font-size: 1.3rem; font-weight: bold; color: #ffccff; }
+    .group-spells { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
 
-    select.add-input {
-      min-width: 120px;
-    }
-
-    .magic-btn {
-      background: linear-gradient(145deg, #2a1a5e, #120a30);
-      border: none;
-      padding: 0.4rem 1rem;
-      border-radius: 50px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
+    /* Modal for Preview */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      visibility: hidden;
+      opacity: 0;
       transition: 0.3s;
     }
+    .modal.active { visibility: visible; opacity: 1; }
+    .modal-content { max-width: 90%; max-height: 90%; background: #1a0f2e; border-radius: 20px; padding: 1rem; position: relative; }
+    .modal-close { position: absolute; top: 10px; right: 20px; font-size: 2rem; cursor: pointer; color: white; }
+    .modal-preview { max-width: 100%; max-height: 70vh; object-fit: contain; }
 
-    /* Preview Modal */
-    .preview-modal {
-      display: none;
+    /* Cover Page */
+    .cover-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: 1s;
+    }
+    .cover-content h1 { font-size: 3rem; background: linear-gradient(135deg, #ffcc44, #ff66cc, cyan); background-clip: text; -webkit-background-clip: text; color: transparent; text-shadow: 0 0 30px rgba(0,255,255,0.5); }
+    .enter-grimoire { margin-top: 2rem; padding: 1rem 2rem; background: linear-gradient(145deg, #2a1a5e, #120a30); border: 2px solid #ff66cc; border-radius: 50px; color: white; cursor: pointer; font-size: 1.2rem; }
+
+    /* Intro Page */
+    .intro-page {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.95);
-      z-index: 400;
+      z-index: 150;
+      display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
+      transition: 0.5s;
     }
-
-    .preview-content {
-      max-width: 90%;
-      max-height: 90%;
-      background: #1a0f2e;
-      border-radius: 30px;
-      padding: 1rem;
-      border: 2px solid cyan;
-    }
-
-    .preview-content img, .preview-content video, .preview-content iframe {
-      max-width: 100%;
-      max-height: 70vh;
-      border-radius: 20px;
-    }
-
-    .close-preview {
-      position: absolute;
-      top: 20px;
-      right: 30px;
-      font-size: 2rem;
-      cursor: pointer;
-      color: white;
-    }
+    .intro-content { text-align: center; max-width: 80%; }
+    .close-intro { margin-top: 2rem; padding: 0.8rem 2rem; background: #ff66cc; border: none; border-radius: 50px; cursor: pointer; }
 
     @media (max-width: 700px) {
-      .spells-grid { grid-template-columns: 1fr; }
-      .cover-content h1 { font-size: 1.5rem; }
+      .spells-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+      .cover-content h1 { font-size: 1.8rem; }
+      .toolbar { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
 <body>
-
 <div id="canvas-container"></div>
 
-<!-- Loading -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loader"></div>
-  <p style="color:#ff66cc;">🔮 Loading Grimoire... 🔮</p>
+<div class="app-container">
+  <!-- Custom Tabs -->
+  <div class="custom-tabs">
+    <button class="tab-btn active" data-tab="spells">🔮 Spells</button>
+    <button class="tab-btn" data-tab="groups">📁 Groups</button>
+    <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+    <button class="tab-btn" id="coverBtn">📖 Cover Page</button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Spells Tab -->
+    <div id="spellsTab" class="page-view active">
+      <div class="toolbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search spells...">
+        <select id="filterType" class="filter-select">
+          <option value="all">All Types</option>
+          <option value="file">📁 Files</option>
+          <option value="url">🔗 Links</option>
+          <option value="image">🖼️ Images</option>
+          <option value="video">🎥 Videos</option>
+          <option value="html">🌐 HTML</option>
+        </select>
+        <select id="sortBy" class="sort-select">
+          <option value="name">Sort by Name</option>
+          <option value="date">Sort by Date</option>
+          <option value="type">Sort by Type</option>
+        </select>
+        <button id="addGroupFromSpellBtn" class="magic-btn" style="padding:0.3rem 0.8rem;">➕ Create Group</button>
+      </div>
+      <div id="spellsGrid" class="spells-grid"></div>
+    </div>
+
+    <!-- Groups Tab -->
+    <div id="groupsTab" class="page-view">
+      <div class="toolbar">
+        <input type="text" id="groupSearch" class="search-input" placeholder="🔍 Search groups...">
+        <button id="newGroupBtn" class="magic-btn">📁 New Group</button>
+      </div>
+      <div id="groupsContainer"></div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settingsTab" class="page-view">
+      <div class="bg-controls">
+        <input type="text" id="bgImageUrl" class="bg-input" placeholder="Background Image URL (for spells page)">
+        <button id="setBgBtn" class="magic-btn">Set BG</button>
+        <button id="resetBgBtn" class="magic-btn">Reset BG</button>
+      </div>
+      <div class="toolbar">
+        <button id="exportAllBtn" class="magic-btn">💾 Export All Data</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+        <button id="importBtn" class="magic-btn">📥 Import Data</button>
+        <button id="clearAllBtn" class="magic-btn" style="background:#a03366;">🗑️ Clear All</button>
+      </div>
+      <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.5); border-radius: 20px;">
+        <h3>📖 About Grimoire</h3>
+        <p>Total Spells: <strong id="statTotal">0</strong> | Groups: <strong id="statGroups">0</strong> | Files: <strong id="statFiles">0</strong></p>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Book Cover Overlay (User adds their image here) -->
-<div class="enter-overlay" id="enterOverlay" style="display:none;">
-  <img class="cover-bg" id="coverBgImg" src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070" alt="Cover">
+<!-- Cover Page Overlay -->
+<div id="coverPage" class="cover-page" style="display: flex;">
   <div class="cover-content">
-    <h1>📖 COMPLETE GRIMOIRE 📖</h1>
-    <p style="color:#ffccff;">✦ The Ultimate Spell Library ✦</p>
-    <button class="enter-btn" id="enterBtn">🔮 OPEN THE GRIMOIRE 🔮</button>
+    <h1>📖 ETERNAL GRIMOIRE 📖</h1>
+    <p>✦ The Ultimate Spell Library ✦</p>
+    <button class="enter-grimoire" id="enterGrimoireBtn">🔮 OPEN THE GRIMOIRE 🔮</button>
   </div>
 </div>
 
-<!-- Main Grimoire UI -->
-<div class="grimoire-ui" id="grimoireUI">
-  <div class="book-header">
-    <div class="book-title">⚜️ COMPLETE GRIMOIRE LIBRARY ⚜️ <span>📖✨🔮🐉⚡</span></div>
-  </div>
-
-  <div class="toolbar">
-    <div class="search-box">
-      <i class="fas fa-search"></i>
-      <input type="text" id="searchInput" placeholder="Search spells...">
-    </div>
-    <select id="typeFilter" class="filter-select">
-      <option value="all">All Types</option>
-      <option value="file">📄 Files (HTML/JS/CSS)</option>
-      <option value="image">🖼️ Images</option>
-      <option value="video">🎥 Videos</option>
-      <option value="link">🔗 Links</option>
-      <option value="note">📝 Notes</option>
-    </select>
-    <select id="groupFilter" class="filter-select">
-      <option value="all">All Groups</option>
-    </select>
-    <select id="sortSelect" class="sort-select">
-      <option value="date-desc">Newest First</option>
-      <option value="date-asc">Oldest First</option>
-      <option value="name-asc">Name A-Z</option>
-      <option value="name-desc">Name Z-A</option>
-    </select>
-    <div class="view-toggle">
-      <button class="view-btn active" data-view="grid">📱 Grid</button>
-      <button class="view-btn" data-view="list">📋 List</button>
-    </div>
-  </div>
-
-  <div class="stats-bar">
-    <div><span>📜</span> SPELLS: <strong id="totalSpells">0</strong></div>
-    <div><span>📁</span> GROUPS: <strong id="totalGroups">0</strong></div>
-    <div><span>💾</span> FILES: <strong id="fileCount">0</strong></div>
-    <div class="sync-status"><span class="sync-dot"></span> <span id="syncText">Cloud Synced</span></div>
-    <button id="addGroupBtn" class="magic-btn" style="background:#7a3a9a;">➕ NEW GROUP</button>
-  </div>
-
-  <!-- Page Container - Full Page Size -->
-  <div class="page-container" id="pageContainer">
-    <div id="groupsContainer" class="groups-container"></div>
-  </div>
-
-  <!-- Add Spell Section -->
-  <div class="add-section">
-    <input type="text" id="newSpellName" class="add-input" placeholder="Spell Name" style="min-width:150px;">
-    <select id="spellType" class="add-input">
-      <option value="file">📄 File (HTML/JS/CSS)</option>
-      <option value="image">🖼️ Image</option>
-      <option value="video">🎥 Video</option>
-      <option value="link">🔗 Link URL</option>
-      <option value="note">📝 Text Note</option>
-    </select>
-    <input type="file" id="fileUpload" class="add-input" style="display:none;">
-    <input type="text" id="urlInput" class="add-input" placeholder="URL or Content" style="min-width:200px;">
-    <select id="targetGroup" class="add-input"></select>
-    <button id="addSpellBtn" class="magic-btn">✨ ADD SPELL ✨</button>
+<!-- Intro Page -->
+<div id="introPage" class="intro-page" style="display: none;">
+  <div class="intro-content">
+    <h2>✨ Welcome to the Grimoire ✨</h2>
+    <p>Create spells, organize into groups, preview images/videos, and save everything to the cloud!</p>
+    <button class="close-intro" id="closeIntroBtn">Begin Your Journey →</button>
   </div>
 </div>
 
 <!-- Preview Modal -->
-<div class="preview-modal" id="previewModal">
-  <span class="close-preview">&times;</span>
-  <div class="preview-content" id="previewContent"></div>
+<div id="previewModal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" id="closeModal">&times;</span>
+    <div id="modalPreview"></div>
+  </div>
 </div>
 
 <script type="module">
   import * as THREE from 'three';
   import gsap from 'gsap';
-  
-  // Firebase Imports
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBzGBwKCo9_dIo2_EnzBfymrBP0PwC-j9A",
-    authDomain: "grimvoir-b11b4.firebaseapp.com",
-    databaseURL: "https://grimvoir-b11b4-default-rtdb.firebaseio.com",
-    projectId: "grimvoir-b11b4",
-    storageBucket: "grimvoir-b11b4.firebasestorage.app",
-    messagingSenderId: "545817815225",
-    appId: "1:545817815225:web:e4dd9d9d72e3e3ec6a9368",
-    measurementId: "G-QPRMEL4EXZ"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const database = getDatabase(app);
-  const grimoireRef = ref(database, 'complete_grimoire');
-
-  // Data Structure
-  let groups = { Default: [] };
-  let currentView = 'grid';
-  let searchTerm = '';
-  let typeFilter = 'all';
-  let groupFilter = 'all';
-  let sortBy = 'date-desc';
-
-  // 3D Background (Simplified)
+  // ==================== 3D BACKGROUND ====================
   const container = document.getElementById('canvas-container');
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050210);
@@ -598,6 +275,7 @@
   camera.position.set(0, 2, 16);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
   const ambient = new THREE.AmbientLight(0x331144);
@@ -605,28 +283,39 @@
   const mainLight = new THREE.DirectionalLight(0xffaaff, 1);
   mainLight.position.set(5, 8, 5);
   scene.add(mainLight);
-  
+  const backLight = new THREE.PointLight(0xff44cc, 0.5);
+  backLight.position.set(-3, 2, -6);
+  scene.add(backLight);
+  const magicLight = new THREE.PointLight(0x44aaff, 0.7);
+  magicLight.position.set(4, 3, 4);
+  scene.add(magicLight);
+
   const orbGroup = new THREE.Group();
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 80; i++) {
     const geo = new THREE.SphereGeometry(0.08, 8, 8);
-    const mat = new THREE.MeshStandardMaterial({ color: [0xff66cc, 0x00ffff][i%2], emissive: 0x331133 });
+    const mat = new THREE.MeshStandardMaterial({ color: [0xff66cc, 0x00ffff, 0xffaa44][i%3], emissive: 0x331133 });
     const orb = new THREE.Mesh(geo, mat);
-    orb.userData = { radius: 2 + Math.random() * 3, speed: 0.003 + Math.random() * 0.01, angle: Math.random() * Math.PI * 2, yBase: (Math.random() - 0.5) * 3 };
+    orb.userData = { radius: 1.5 + Math.random() * 3.5, speed: 0.002 + Math.random() * 0.015, angle: Math.random() * Math.PI * 2, yBase: (Math.random() - 0.5) * 4 };
     orbGroup.add(orb);
   }
   scene.add(orbGroup);
-  
   const crystalGeo = new THREE.IcosahedronGeometry(0.7, 0);
   const crystalMat = new THREE.MeshStandardMaterial({ color: 0xff44aa, emissive: 0x441133 });
   const crystal = new THREE.Mesh(crystalGeo, crystalMat);
   crystal.position.set(0, 1, 0);
   scene.add(crystal);
+  const ringGeo = new THREE.TorusGeometry(1.1, 0.05, 64, 200);
+  const ringMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x006666 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI / 2;
+  scene.add(ring);
 
   let time3d = 0;
   function animate3d() {
     requestAnimationFrame(animate3d);
     time3d += 0.012;
     crystal.rotation.y = time3d * 0.4;
+    ring.rotation.z += 0.007;
     orbGroup.children.forEach((orb, i) => {
       const d = orb.userData;
       d.angle += d.speed;
@@ -634,357 +323,383 @@
       orb.position.z = Math.sin(d.angle) * d.radius;
       orb.position.y = Math.sin(d.angle * 1.5) * 0.6 + d.yBase;
     });
+    magicLight.intensity = 0.5 + Math.sin(time3d) * 0.3;
     camera.position.x += (Math.sin(time3d * 0.1) * 0.1 - camera.position.x) * 0.02;
     camera.lookAt(0, 1, 0);
     renderer.render(scene, camera);
   }
   animate3d();
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+  window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 
-  // Helper Functions
-  function getFileTypeFromName(filename) {
-    const ext = filename.split('.').pop().toLowerCase();
-    if (['html', 'htm', 'js', 'css', 'xml'].includes(ext)) return 'file';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
-    if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return 'video';
+  // ==================== DATA STRUCTURE ====================
+  let spells = [];
+  let groups = [];
+  let nextId = () => Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+
+  // Load/Save to localStorage (with backup to IndexedDB style)
+  function saveData() {
+    localStorage.setItem('grimoire_spells', JSON.stringify(spells));
+    localStorage.setItem('grimoire_groups', JSON.stringify(groups));
+    updateStats();
+  }
+  function loadData() {
+    const savedSpells = localStorage.getItem('grimoire_spells');
+    const savedGroups = localStorage.getItem('grimoire_groups');
+    if (savedSpells) spells = JSON.parse(savedSpells);
+    if (savedGroups) groups = JSON.parse(savedGroups);
+    if (!spells.length) {
+      spells = [{ id: nextId(), name: "Example Spell", type: "url", urlPath: "https://example.com", emoji: "🔮", createdAt: Date.now() }];
+    }
+    if (!groups.length) {
+      groups = [{ id: nextId(), name: "Default Group", spellIds: [spells[0]?.id].filter(Boolean) }];
+    }
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent = spells.length;
+    document.getElementById('statGroups').textContent = groups.length;
+    document.getElementById('statFiles').textContent = spells.filter(s => s.type === 'file').length;
+  }
+
+  // Get file type
+  function getFileType(file) {
+    if (file.type?.startsWith('image/')) return 'image';
+    if (file.type?.startsWith('video/')) return 'video';
+    if (file.name?.endsWith('.html') || file.name?.endsWith('.htm')) return 'html';
     return 'file';
   }
 
-  function getTypeIcon(type) {
-    const icons = { file: '📄', image: '🖼️', video: '🎥', link: '🔗', note: '📝' };
-    return icons[type] || '🔮';
+  function getSpellType(spell) {
+    if (spell.type === 'url') return 'url';
+    if (spell.type === 'image') return 'image';
+    if (spell.type === 'video') return 'video';
+    if (spell.type === 'html') return 'html';
+    return 'file';
   }
 
-  function formatDate(timestamp) {
-    return new Date(timestamp).toLocaleString();
-  }
-
-  async function fileToBase64(file) {
+  async function addFileSpell(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
+      reader.onload = (e) => {
+        const base64 = e.target.result.split(',')[1];
+        const fileType = getFileType(file);
+        spells.push({
+          id: nextId(),
+          name: file.name,
+          type: fileType,
+          fileBase64: base64,
+          mimeType: file.type,
+          size: file.size,
+          createdAt: Date.now(),
+          emoji: fileType === 'image' ? '🖼️' : fileType === 'video' ? '🎥' : fileType === 'html' ? '🌐' : '📁'
+        });
+        saveData();
+        renderSpells();
+        resolve();
+      };
       reader.readAsDataURL(file);
     });
   }
 
-  // Save to Firebase
-  async function saveToCloud() {
-    await set(grimoireRef, groups);
-    document.getElementById('syncText').textContent = 'Synced';
-  }
-
-  // Load from Firebase
-  async function loadFromCloud() {
-    const snapshot = await get(grimoireRef);
-    if (snapshot.exists()) {
-      groups = snapshot.val();
-    } else {
-      groups = { Default: [] };
-    }
-    if (!groups.Default) groups.Default = [];
-    updateGroupFilter();
-    renderGrimoire();
-  }
-
-  // Listen to real-time changes
-  function listenToCloud() {
-    onValue(grimoireRef, (snapshot) => {
-      if (snapshot.exists()) {
-        groups = snapshot.val();
-        if (!groups.Default) groups.Default = [];
-        updateGroupFilter();
-        renderGrimoire();
-      }
+  function addUrlSpell(name, url) {
+    spells.push({
+      id: nextId(),
+      name: name.trim(),
+      type: 'url',
+      urlPath: url.trim(),
+      createdAt: Date.now(),
+      emoji: '🔗'
     });
+    saveData();
+    renderSpells();
   }
 
-  // Update group filter dropdown
-  function updateGroupFilter() {
-    const groupSelect = document.getElementById('groupFilter');
-    const targetGroup = document.getElementById('targetGroup');
-    const groupNames = Object.keys(groups);
-    groupSelect.innerHTML = '<option value="all">All Groups</option>' + groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
-    targetGroup.innerHTML = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
-    document.getElementById('totalGroups').textContent = groupNames.length;
+  // Render Spells with search/filter/sort
+  function renderSpells() {
+    let filtered = [...spells];
+    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const filterType = document.getElementById('filterType')?.value || 'all';
+    const sortBy = document.getElementById('sortBy')?.value || 'name';
+    
+    if (search) filtered = filtered.filter(s => s.name.toLowerCase().includes(search));
+    if (filterType !== 'all') filtered = filtered.filter(s => s.type === filterType);
+    
+    if (sortBy === 'name') filtered.sort((a,b) => a.name.localeCompare(b.name));
+    if (sortBy === 'date') filtered.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    if (sortBy === 'type') filtered.sort((a,b) => (a.type||'').localeCompare(b.type||''));
+    
+    const grid = document.getElementById('spellsGrid');
+    if (!filtered.length) { grid.innerHTML = '<div style="text-align:center; padding:2rem;">✨ No spells found. Add some! ✨</div>'; return; }
+    
+    grid.innerHTML = filtered.map(spell => `
+      <div class="spell-card" data-id="${spell.id}">
+        <div class="spell-emoji">${spell.emoji || '🔮'}</div>
+        <div class="spell-name">${escapeHtml(spell.name)}</div>
+        <div class="spell-type">${spell.type === 'url' ? '🔗 Link Spell' : spell.type === 'image' ? '🖼️ Image' : spell.type === 'video' ? '🎥 Video' : spell.type === 'html' ? '🌐 HTML File' : '📁 File'}</div>
+        <div class="spell-preview">${spell.type === 'image' && spell.fileBase64 ? `<img src="data:${spell.mimeType};base64,${spell.fileBase64}" alt="preview">` : spell.type === 'video' && spell.fileBase64 ? `<video src="data:${spell.mimeType};base64,${spell.fileBase64}" controls style="max-height:80px;"></video>` : ''}</div>
+        <div class="spell-actions">
+          <button class="spell-btn cast-btn" data-action="cast" data-id="${spell.id}">⚡ Cast</button>
+          <button class="spell-btn preview-btn" data-action="preview" data-id="${spell.id}">👁️ Preview</button>
+          <button class="spell-btn edit-btn" data-action="edit" data-id="${spell.id}">✏️ Edit</button>
+          <button class="spell-btn delete-btn" data-action="delete" data-id="${spell.id}">🗑️ Del</button>
+        </div>
+      </div>
+    `).join('');
+    
+    attachSpellEvents();
   }
 
-  // Render Grimoire
-  function renderGrimoire() {
-    const container = document.getElementById('groupsContainer');
-    let filteredGroups = { ...groups };
-    
-    // Filter by group
-    if (groupFilter !== 'all') {
-      filteredGroups = { [groupFilter]: groups[groupFilter] || [] };
-    }
-    
-    // Filter and sort spells in each group
-    for (let groupName in filteredGroups) {
-      let spells = filteredGroups[groupName];
-      
-      // Search filter
-      if (searchTerm) {
-        spells = spells.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      }
-      
-      // Type filter
-      if (typeFilter !== 'all') {
-        spells = spells.filter(s => s.type === typeFilter);
-      }
-      
-      // Sort
-      spells.sort((a, b) => {
-        if (sortBy === 'date-desc') return b.timestamp - a.timestamp;
-        if (sortBy === 'date-asc') return a.timestamp - b.timestamp;
-        if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
-        if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
-        return 0;
-      });
-      
-      filteredGroups[groupName] = spells;
-    }
-    
-    let html = `<div class="groups-container">`;
-    for (let groupName in filteredGroups) {
-      const spells = filteredGroups[groupName];
-      html += `
-        <div class="group-card">
-          <div class="group-header">
-            <span class="group-title">${getRandomEmoji()} ${escapeHtml(groupName)} (${spells.length})</span>
-            <div class="group-actions">
-              <button class="magic-btn" onclick="window.renameGroup('${escapeHtml(groupName)}')" style="padding:0.2rem 0.6rem;">✏️ Rename</button>
-              <button class="magic-btn" onclick="window.deleteGroup('${escapeHtml(groupName)}')" style="background:#cc3366; padding:0.2rem 0.6rem;">🗑️ Delete</button>
-            </div>
-          </div>
-          <div class="spells-grid" style="${currentView === 'list' ? 'display:block;' : ''}">
-      `;
-      
-      for (const spell of spells) {
-        if (currentView === 'list') {
-          html += `<div class="spell-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-          html += `<div><span class="spell-icon">${getTypeIcon(spell.type)}</span> <strong>${escapeHtml(spell.name)}</strong> <span class="spell-type-badge type-${spell.type}">${spell.type}</span></div>`;
-        } else {
-          html += `<div class="spell-card">`;
-          html += `<div class="spell-icon">${getTypeIcon(spell.type)}</div>`;
-          html += `<div class="spell-name">${escapeHtml(spell.name)}</div>`;
-          html += `<div class="spell-type-badge type-${spell.type}">${spell.type}</div>`;
-          if (spell.type === 'image' && spell.content) {
-            html += `<img src="${spell.content}" class="spell-preview" alt="preview">`;
-          } else if (spell.type === 'video' && spell.content) {
-            html += `<video src="${spell.content}" class="spell-preview" controls style="max-height:100px;"></video>`;
-          } else if (spell.type === 'note' && spell.content) {
-            html += `<div style="font-size:0.7rem; color:#aaa; margin-top:0.3rem;">${escapeHtml(spell.content.substring(0, 80))}${spell.content.length > 80 ? '...' : ''}</div>`;
-          }
-        }
-        
-        html += `<div class="spell-actions">
-          <button class="spell-btn cast-btn" onclick="window.castSpell('${spell.id}')">⚡ CAST</button>
-          <button class="spell-btn preview-btn" onclick="window.previewSpell('${spell.id}')">👁️ PREVIEW</button>
-          <button class="spell-btn edit-btn" onclick="window.editSpell('${spell.id}')">✏️ EDIT</button>
-          <button class="spell-btn delete-btn" onclick="window.deleteSpell('${spell.id}', '${escapeHtml(groupName)}')">🗑️ DEL</button>
-        </div>`;
-        html += `</div>`;
-      }
-      
-      if (spells.length === 0) {
-        html += `<div style="text-align:center; padding:2rem; color:#aaa;">No spells in this group. Add one below!</div>`;
-      }
-      
-      html += `</div></div>`;
-    }
-    html += `</div>`;
-    container.innerHTML = html;
-    
-    document.getElementById('totalSpells').textContent = Object.values(groups).flat().length;
-    const fileCount = Object.values(groups).flat().filter(s => s.type === 'file').length;
-    document.getElementById('fileCount').textContent = fileCount;
-  }
-
-  function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]; }); }
-  function getRandomEmoji() { return ['🔮', '✨', '⚡', '🔥', '💧', '🌈', '⭐', '🌙', '🐉', '🗡️'][Math.floor(Math.random() * 10)]; }
-
-  // Global functions for buttons
-  window.castSpell = async (id) => {
-    for (let group in groups) {
-      const spell = groups[group].find(s => s.id === id);
-      if (spell) {
-        if (spell.type === 'file' && spell.content) {
-          const blob = await fetch(spell.content).then(r => r.blob());
+  function attachSpellEvents() {
+    document.querySelectorAll('.cast-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.dataset.id;
+        const spell = spells.find(s => s.id === id);
+        if (spell.type === 'url' && spell.urlPath) window.open(spell.urlPath, '_blank');
+        else if (spell.fileBase64) {
+          const blob = base64ToBlob(spell.fileBase64, spell.mimeType);
           const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-        } else if (spell.type === 'link' && spell.content) {
-          window.open(spell.content, '_blank');
-        } else if (spell.type === 'image' || spell.type === 'video') {
-          window.open(spell.content, '_blank');
-        } else if (spell.type === 'note') {
-          alert(`📝 ${spell.name}\n\n${spell.content}`);
+          if (spell.type === 'html') window.open(url, '_blank');
+          else window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
         }
-        return;
-      }
-    }
-  };
-
-  window.previewSpell = (id) => {
-    for (let group in groups) {
-      const spell = groups[group].find(s => s.id === id);
-      if (spell) {
+      });
+    });
+    document.querySelectorAll('.preview-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.dataset.id;
+        const spell = spells.find(s => s.id === id);
         const modal = document.getElementById('previewModal');
-        const content = document.getElementById('previewContent');
-        if (spell.type === 'image') content.innerHTML = `<img src="${spell.content}" alt="preview">`;
-        else if (spell.type === 'video') content.innerHTML = `<video src="${spell.content}" controls autoplay></video>`;
-        else if (spell.type === 'link') content.innerHTML = `<iframe src="${spell.content}" width="100%" height="70vh"></iframe>`;
-        else if (spell.type === 'note') content.innerHTML = `<div style="padding:2rem;"><h3>${escapeHtml(spell.name)}</h3><p>${escapeHtml(spell.content)}</p></div>`;
-        else if (spell.type === 'file') content.innerHTML = `<div style="padding:2rem;"><h3>${escapeHtml(spell.name)}</h3><p>File ready to cast. Click CAST to open.</p></div>`;
-        modal.style.display = 'flex';
-        return;
-      }
-    }
-  };
-
-  window.deleteSpell = async (id, groupName) => {
-    if (confirm('Delete this spell?')) {
-      groups[groupName] = groups[groupName].filter(s => s.id !== id);
-      await saveToCloud();
-      renderGrimoire();
-    }
-  };
-
-  window.editSpell = async (id) => {
-    for (let group in groups) {
-      const spell = groups[group].find(s => s.id === id);
-      if (spell) {
-        const newName = prompt('Edit spell name:', spell.name);
-        if (newName) {
-          spell.name = newName;
-          await saveToCloud();
-          renderGrimoire();
+        const modalPreview = document.getElementById('modalPreview');
+        if (spell.type === 'image' && spell.fileBase64) modalPreview.innerHTML = `<img src="data:${spell.mimeType};base64,${spell.fileBase64}" class="modal-preview">`;
+        else if (spell.type === 'video' && spell.fileBase64) modalPreview.innerHTML = `<video src="data:${spell.mimeType};base64,${spell.fileBase64}" controls class="modal-preview"></video>`;
+        else if (spell.urlPath) modalPreview.innerHTML = `<iframe src="${spell.urlPath}" style="width:80vw; height:60vh;"></iframe>`;
+        else modalPreview.innerHTML = `<p>No preview available for ${spell.name}</p>`;
+        modal.classList.add('active');
+      });
+    });
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.dataset.id;
+        const newName = prompt('Rename spell:', spells.find(s => s.id === id)?.name);
+        if (newName) { spells.find(s => s.id === id).name = newName; saveData(); renderSpells(); }
+      });
+    });
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (confirm('Delete this spell?')) {
+          spells = spells.filter(s => s.id !== btn.dataset.id);
+          groups.forEach(g => g.spellIds = g.spellIds.filter(id => id !== btn.dataset.id));
+          saveData();
+          renderSpells();
+          renderGroups();
         }
-        return;
-      }
-    }
-  };
+      });
+    });
+  }
 
-  window.renameGroup = async (oldName) => {
-    const newName = prompt('New group name:', oldName);
-    if (newName && newName !== oldName) {
-      groups[newName] = groups[oldName];
-      delete groups[oldName];
-      await saveToCloud();
-      updateGroupFilter();
-      renderGrimoire();
-    }
-  };
+  function base64ToBlob(base64, mime) {
+    const byteChars = atob(base64);
+    const byteNums = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    return new Blob([new Uint8Array(byteNums)], { type: mime || 'application/octet-stream' });
+  }
 
-  window.deleteGroup = async (groupName) => {
-    if (groupName === 'Default') { alert('Cannot delete Default group'); return; }
-    if (confirm(`Delete group "${groupName}" and all its spells?`)) {
-      delete groups[groupName];
-      await saveToCloud();
-      updateGroupFilter();
-      renderGrimoire();
-    }
-  };
+  function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
 
-  // Add Spell
-  document.getElementById('addSpellBtn').addEventListener('click', async () => {
-    const name = document.getElementById('newSpellName').value.trim();
-    const type = document.getElementById('spellType').value;
-    const groupName = document.getElementById('targetGroup').value;
-    const urlInput = document.getElementById('urlInput').value.trim();
-    const fileInput = document.getElementById('fileUpload');
+  // Groups Rendering
+  function renderGroups() {
+    const container = document.getElementById('groupsContainer');
+    const search = document.getElementById('groupSearch')?.value.toLowerCase() || '';
+    let filtered = groups.filter(g => g.name.toLowerCase().includes(search));
+    container.innerHTML = filtered.map(group => `
+      <div class="group-card" data-group-id="${group.id}">
+        <div class="group-header">
+          <span class="group-name">📁 ${escapeHtml(group.name)}</span>
+          <div>
+            <button class="magic-btn add-to-group-btn" data-group-id="${group.id}" style="padding:0.2rem 0.6rem;">+ Add Spell</button>
+            <button class="magic-btn rename-group-btn" data-group-id="${group.id}" style="padding:0.2rem 0.6rem;">✏️</button>
+            <button class="magic-btn delete-group-btn" data-group-id="${group.id}" style="padding:0.2rem 0.6rem; background:#a03366;">🗑️</button>
+          </div>
+        </div>
+        <div class="group-spells" id="group-spells-${group.id}">
+          ${group.spellIds.map(sid => { const s = spells.find(sp => sp.id === sid); return s ? `<span style="background:#2a1a5e; padding:0.2rem 0.6rem; border-radius:20px;">${s.emoji} ${escapeHtml(s.name)}</span>` : ''; }).join('') || '<span style="color:#aaa;">No spells in this group</span>'}
+        </div>
+      </div>
+    `).join('');
     
-    if (!name) { alert('Enter spell name'); return; }
-    
-    let content = '';
-    if (type === 'file' && fileInput.files.length) {
-      content = await fileToBase64(fileInput.files[0]);
-    } else if (type === 'link') {
-      content = urlInput;
-    } else if (type === 'note') {
-      content = urlInput;
-    } else if ((type === 'image' || type === 'video') && fileInput.files.length) {
-      content = await fileToBase64(fileInput.files[0]);
-    } else {
-      content = urlInput;
-    }
-    
-    const newSpell = {
-      id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-      name: name,
-      type: type,
-      content: content,
-      timestamp: Date.now()
-    };
-    
-    if (!groups[groupName]) groups[groupName] = [];
-    groups[groupName].push(newSpell);
-    await saveToCloud();
-    
-    document.getElementById('newSpellName').value = '';
-    document.getElementById('urlInput').value = '';
-    document.getElementById('fileUpload').value = '';
-    updateGroupFilter();
-    renderGrimoire();
-  });
+    document.querySelectorAll('.add-to-group-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const groupId = btn.dataset.groupId;
+        const spellNames = spells.map(s => `${s.emoji} ${s.name}`).join('\n');
+        const spellId = prompt(`Select spell ID from list:\n${spells.map(s => `${s.id.substring(0,8)} - ${s.name}`).join('\n')}\n\nEnter Spell ID:`);
+        if (spellId && spells.find(s => s.id === spellId)) {
+          const group = groups.find(g => g.id === groupId);
+          if (!group.spellIds.includes(spellId)) group.spellIds.push(spellId);
+          saveData();
+          renderGroups();
+        }
+      });
+    });
+    document.querySelectorAll('.rename-group-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const groupId = btn.dataset.groupId;
+        const newName = prompt('New group name:');
+        if (newName) { groups.find(g => g.id === groupId).name = newName; saveData(); renderGroups(); }
+      });
+    });
+    document.querySelectorAll('.delete-group-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (confirm('Delete this group?')) {
+          groups = groups.filter(g => g.id !== btn.dataset.groupId);
+          saveData();
+          renderGroups();
+        }
+      });
+    });
+  }
 
-  // UI Event Listeners
-  document.getElementById('searchInput').addEventListener('input', (e) => { searchTerm = e.target.value; renderGrimoire(); });
-  document.getElementById('typeFilter').addEventListener('change', (e) => { typeFilter = e.target.value; renderGrimoire(); });
-  document.getElementById('groupFilter').addEventListener('change', (e) => { groupFilter = e.target.value; renderGrimoire(); });
-  document.getElementById('sortSelect').addEventListener('change', (e) => { sortBy = e.target.value; renderGrimoire(); });
-  
-  document.querySelectorAll('.view-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      currentView = btn.getAttribute('data-view');
-      renderGrimoire();
+      document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+      document.getElementById(btn.dataset.tab + 'Tab').classList.add('active');
+      if (btn.dataset.tab === 'groups') renderGroups();
+      if (btn.dataset.tab === 'spells') renderSpells();
     });
   });
-  
-  document.getElementById('spellType').addEventListener('change', (e) => {
-    const showFile = e.target.value === 'file' || e.target.value === 'image' || e.target.value === 'video';
-    document.getElementById('fileUpload').style.display = showFile ? 'inline-block' : 'none';
-    document.getElementById('urlInput').style.display = (e.target.value === 'link' || e.target.value === 'note') ? 'inline-block' : 'none';
+
+  // Settings Actions
+  document.getElementById('setBgBtn')?.addEventListener('click', () => {
+    const url = document.getElementById('bgImageUrl').value;
+    if (url) document.getElementById('spellsTab').style.background = `url(${url}) center/cover no-repeat`;
   });
-  
-  document.getElementById('addGroupBtn').addEventListener('click', async () => {
-    const newGroup = prompt('New group name:');
-    if (newGroup && !groups[newGroup]) {
-      groups[newGroup] = [];
-      await saveToCloud();
-      updateGroupFilter();
-      renderGrimoire();
+  document.getElementById('resetBgBtn')?.addEventListener('click', () => {
+    document.getElementById('spellsTab').style.background = '';
+  });
+  document.getElementById('exportAllBtn')?.addEventListener('click', () => {
+    const data = { spells, groups, version: 2 };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `grimoire_backup_${Date.now()}.json`;
+    a.click();
+  });
+  document.getElementById('importBtn')?.addEventListener('click', () => document.getElementById('importFileInput').click());
+  document.getElementById('importFileInput')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.spells) spells = data.spells;
+          if (data.groups) groups = data.groups;
+          saveData();
+          renderSpells();
+          renderGroups();
+          alert('Import successful!');
+        } catch(err) { alert('Invalid file'); }
+      };
+      reader.readAsText(file);
     }
   });
-  
-  // Preview Modal Close
-  document.querySelector('.close-preview').addEventListener('click', () => {
-    document.getElementById('previewModal').style.display = 'none';
+  document.getElementById('clearAllBtn')?.addEventListener('click', () => {
+    if (confirm('⚠️ THIS WILL DELETE ALL SPELLS AND GROUPS! Continue?')) {
+      spells = [];
+      groups = [];
+      saveData();
+      renderSpells();
+      renderGroups();
+    }
   });
-  
-  // Initialize
-  async function init() {
-    await loadFromCloud();
-    listenToCloud();
-    document.getElementById('loadingOverlay').style.display = 'none';
-    document.getElementById('enterOverlay').style.display = 'flex';
-  }
-  
-  document.getElementById('enterBtn').addEventListener('click', () => {
-    const overlay = document.getElementById('enterOverlay');
-    const ui = document.getElementById('grimoireUI');
-    gsap.to(overlay, { duration: 0.8, rotationY: -90, transformOrigin: "left center", ease: "power2.inOut", onComplete: () => {
-      overlay.style.display = 'none';
-      ui.classList.add('open');
+  document.getElementById('newGroupBtn')?.addEventListener('click', () => {
+    const name = prompt('Group name:');
+    if (name) { groups.push({ id: nextId(), name, spellIds: [] }); saveData(); renderGroups(); }
+  });
+  document.getElementById('addGroupFromSpellBtn')?.addEventListener('click', () => {
+    const name = prompt('New group name:');
+    if (name) groups.push({ id: nextId(), name, spellIds: [] });
+    saveData();
+    renderGroups();
+  });
+
+  // Search/Filter listeners
+  document.getElementById('searchInput')?.addEventListener('input', () => renderSpells());
+  document.getElementById('filterType')?.addEventListener('change', () => renderSpells());
+  document.getElementById('sortBy')?.addEventListener('change', () => renderSpells());
+  document.getElementById('groupSearch')?.addEventListener('input', () => renderGroups());
+
+  // Add spell buttons
+  document.getElementById('uploadBtn')?.addEventListener('click', async () => {
+    const input = document.getElementById('fileInput');
+    if (input?.files.length) {
+      for (const file of Array.from(input.files)) await addFileSpell(file);
+      input.value = '';
+    }
+  });
+  document.getElementById('addUrlBtn')?.addEventListener('click', () => {
+    const name = document.getElementById('spellName')?.value;
+    const url = document.getElementById('spellUrl')?.value;
+    if (name && url) addUrlSpell(name, url);
+    else alert('Enter name and URL');
+  });
+
+  // Cover Page Logic
+  const coverPage = document.getElementById('coverPage');
+  const introPage = document.getElementById('introPage');
+  const enterBtn = document.getElementById('enterGrimoireBtn');
+  enterBtn?.addEventListener('click', () => {
+    gsap.to(coverPage, { duration: 1, opacity: 0, onComplete: () => {
+      coverPage.style.display = 'none';
+      introPage.style.display = 'flex';
     }});
   });
+  document.getElementById('closeIntroBtn')?.addEventListener('click', () => {
+    gsap.to(introPage, { duration: 0.8, opacity: 0, onComplete: () => introPage.style.display = 'none' });
+  });
+  document.getElementById('coverBtn')?.addEventListener('click', () => {
+    coverPage.style.display = 'flex';
+    coverPage.style.opacity = 1;
+    introPage.style.display = 'none';
+  });
+
+  // Modal close
+  document.getElementById('closeModal')?.addEventListener('click', () => document.getElementById('previewModal').classList.remove('active'));
+  document.getElementById('previewModal')?.addEventListener('click', (e) => { if (e.target === document.getElementById('previewModal')) document.getElementById('previewModal').classList.remove('active'); });
+
+  // Initialize
+  loadData();
+  renderSpells();
+  renderGroups();
   
-  init();
+  // Add missing UI elements dynamically
+  const altarDiv = document.querySelector('.ritual-altar') || document.createElement('div');
+  if (!document.querySelector('.ritual-altar')) {
+    const toolbar = document.querySelector('.toolbar');
+    const addDiv = document.createElement('div');
+    addDiv.className = 'ritual-altar';
+    addDiv.style.cssText = 'display:flex; gap:0.5rem; margin-top:0.5rem; flex-wrap:wrap;';
+    addDiv.innerHTML = `
+      <input type="file" id="fileInput" multiple style="background:#0a0520; border:1px solid #ff66cc; border-radius:50px; padding:0.3rem; color:white;">
+      <button id="uploadBtn" class="magic-btn">✨ Upload File</button>
+      <input type="text" id="spellName" placeholder="Spell Name" style="background:#0a0520; border:1px solid #ff66cc; border-radius:50px; padding:0.3rem;">
+      <input type="text" id="spellUrl" placeholder="URL" style="background:#0a0520; border:1px solid #ff66cc; border-radius:50px; padding:0.3rem;">
+      <button id="addUrlBtn" class="magic-btn">🔗 Add Link</button>
+    `;
+    document.querySelector('.main-content').insertBefore(addDiv, document.getElementById('spellsTab'));
+    document.getElementById('uploadBtn')?.addEventListener('click', async () => {
+      const input = document.getElementById('fileInput');
+      if (input?.files.length) { for (const f of Array.from(input.files)) await addFileSpell(f); input.value = ''; }
+    });
+    document.getElementById('addUrlBtn')?.addEventListener('click', () => {
+      const name = document.getElementById('spellName')?.value;
+      const url = document.getElementById('spellUrl')?.value;
+      if (name && url) addUrlSpell(name, url);
+    });
+  }
 </script>
 </body>
 </html>
