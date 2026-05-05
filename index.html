@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>📖 Eternal Grimoire | 3D Spellbook with File Storage 📖</title>
-  <!-- Three.js -->
+  <title>📖 Eternal Grimoire | 3D Spellbook with File System 📖</title>
+  <!-- Three.js + GSAP -->
   <script type="importmap">
     {
       "imports": {
@@ -37,8 +37,17 @@
       z-index: 0;
     }
 
-    /* Custom Image Cover Overlay */
-    .book-cover-overlay {
+    /* Main Container */
+    .app-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Enter Overlay - Fullscreen Cover Image */
+    .enter-overlay {
       position: fixed;
       top: 0;
       left: 0;
@@ -50,16 +59,22 @@
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
       transform-origin: left center;
       transform-style: preserve-3d;
     }
 
-    .cover-image-container {
+    .cover-bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.7);
+    }
+
+    .cover-content {
       position: relative;
-      width: 80%;
-      max-width: 500px;
       text-align: center;
+      z-index: 10;
       animation: coverFloat 2s infinite alternate;
     }
 
@@ -68,27 +83,17 @@
       100% { transform: translateY(-15px); filter: drop-shadow(0 0 50px #00ffff);}
     }
 
-    .cover-image-container img {
-      width: 100%;
-      border-radius: 30px;
-      border: 3px solid;
-      border-image: linear-gradient(135deg, #ff66cc, #00ffff) 1;
-      box-shadow: 0 0 60px rgba(0,255,255,0.3);
-    }
-
-    .cover-text {
-      margin-top: 2rem;
-      font-size: 2rem;
-      font-weight: bold;
+    .cover-content h1 {
+      font-size: 4rem;
       background: linear-gradient(135deg, #ffcc44, #ff66cc, #00ffff);
       background-clip: text;
       -webkit-background-clip: text;
       color: transparent;
-      letter-spacing: 4px;
+      letter-spacing: 8px;
     }
 
     .enter-btn {
-      margin-top: 1.5rem;
+      margin-top: 2rem;
       background: linear-gradient(145deg, #2a1a5e, #120a30);
       border: 2px solid #ff66cc;
       padding: 0.8rem 2rem;
@@ -102,43 +107,37 @@
     .enter-btn:hover {
       transform: scale(1.1);
       box-shadow: 0 0 30px cyan;
-      border-color: cyan;
     }
 
     /* Main Grimoire UI */
-    .grimoire-container {
-      position: relative;
-      z-index: 10;
+    .grimoire-ui {
       width: 100%;
       height: 100vh;
-      overflow: hidden;
-      background: radial-gradient(circle at 20% 30%, rgba(10, 5, 25, 0.6), rgba(0, 0, 0, 0.8));
-      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
       opacity: 0;
       transition: opacity 1s ease;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
     }
 
-    .grimoire-container.open {
+    .grimoire-ui.open {
       opacity: 1;
       pointer-events: auto;
     }
 
-    /* Book Header with Emojis */
+    /* Header */
     .book-header {
       text-align: center;
       padding: 1rem;
-      background: rgba(20, 10, 40, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(10px);
       border-bottom: 2px solid rgba(255, 102, 204, 0.5);
+      z-index: 20;
     }
 
     .book-title {
-      font-size: 1.8rem;
+      font-size: 1.5rem;
       letter-spacing: 2px;
-      color: white;
     }
 
     .book-title span {
@@ -158,83 +157,97 @@
       align-items: center;
       padding: 0.5rem 1.5rem;
       background: rgba(0, 0, 0, 0.5);
-      margin: 0.5rem 1rem;
-      border-radius: 60px;
+      backdrop-filter: blur(8px);
       flex-wrap: wrap;
       gap: 0.8rem;
+      z-index: 20;
     }
 
     .stats-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.9rem;
-      color:white;
+      font-size: 0.85rem;
+      color: #ffddee;
     }
 
-    /* Book Pages - Flip Book Style */
-    .book-pages-wrapper {
+    /* Page Container - Single Page View */
+    .page-container {
       flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Current Page */
+    .current-page {
+      width: 90%;
+      max-width: 1200px;
+      height: 70vh;
+      background: rgba(20, 10, 35, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 30px;
+      padding: 1.5rem;
+      border: 2px solid rgba(0, 255, 255, 0.4);
+      box-shadow: 0 0 40px rgba(0,255,255,0.2);
+      animation: pageEnter 0.5s ease;
       overflow-y: auto;
-      padding: 1rem 2rem;
       position: relative;
     }
 
-    .book-pages-wrapper::-webkit-scrollbar {
-      width: 8px;
+    .current-page::-webkit-scrollbar {
+      width: 6px;
     }
-    .book-pages-wrapper::-webkit-scrollbar-track {
+    .current-page::-webkit-scrollbar-track {
       background: #1a0f2e;
       border-radius: 10px;
     }
-    .book-pages-wrapper::-webkit-scrollbar-thumb {
+    .current-page::-webkit-scrollbar-thumb {
       background: linear-gradient(135deg, #ff66cc, #00ffff);
       border-radius: 10px;
     }
 
-    /* Page Styling - Book Page */
-    .book-page {
-      background: rgba(30, 20, 55, 0.9);
-      backdrop-filter: blur(12px);
-      border-radius: 25px;
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      border: 1px solid rgba(0, 255, 255, 0.4);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      animation: pageFlipIn 0.6s ease-out;
-    }
-
-    @keyframes pageFlipIn {
-      0% {
-        transform: rotateY(-90deg);
+    @keyframes pageEnter {
+      from {
         opacity: 0;
+        transform: scale(0.95) rotateY(-10deg);
       }
-      100% {
-        transform: rotateY(0deg);
+      to {
         opacity: 1;
+        transform: scale(1) rotateY(0);
       }
     }
 
-    .page-header {
+    /* Page Background Image */
+    .page-bg-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 30px;
+      opacity: 0.2;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .page-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .page-header-info {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
       padding-bottom: 0.5rem;
-      border-bottom: 2px solid rgba(255, 102, 204, 0.5);
+      border-bottom: 1px solid rgba(255,102,204,0.5);
     }
 
-    .page-number {
-      font-size: 1rem;
-      color: #ffaaee;
-      font-family: monospace;
-    }
-
-    .page-decoration {
-      font-size: 1.2rem;
-    }
-
-    /* 4x3 Grid Layout - 12 Spells per Page */
+    /* 4x3 Grid */
     .spells-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -243,25 +256,19 @@
 
     /* Spell Card */
     .spell-card {
-      background: linear-gradient(145deg, #1a0f2e, #0a0518);
+      background: linear-gradient(145deg, rgba(26, 15, 46, 0.9), rgba(10, 5, 24, 0.9));
       border-radius: 16px;
       padding: 0.8rem;
       border-left: 3px solid #ff66cc;
-      border-right: 1px solid #00ffff;
-      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      animation: cardGlow 3s infinite alternate;
+      transition: all 0.3s;
       cursor: pointer;
-    }
-
-    @keyframes cardGlow {
-      0% { border-left-color: #ff66cc; box-shadow: 0 0 5px rgba(255,102,204,0.3);}
-      100% { border-left-color: #00ffff; box-shadow: 0 0 20px rgba(0,255,255,0.4);}
+      backdrop-filter: blur(4px);
     }
 
     .spell-card:hover {
-      transform: translateY(-5px) scale(1.02);
+      transform: translateY(-5px);
       border-left-color: cyan;
-      box-shadow: 0 0 25px cyan;
+      box-shadow: 0 0 20px cyan;
     }
 
     .spell-emoji {
@@ -272,12 +279,12 @@
     }
 
     @keyframes emojiGlow {
-      0% { filter: drop-shadow(0 0 2px #ff44cc); transform: scale(1);}
-      100% { filter: drop-shadow(0 0 15px #00ffff); transform: scale(1.05);}
+      0% { filter: drop-shadow(0 0 2px #ff44cc);}
+      100% { filter: drop-shadow(0 0 15px #00ffff);}
     }
 
     .spell-name {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: bold;
       text-align: center;
       margin: 0.5rem 0 0.3rem;
@@ -289,7 +296,6 @@
       font-size: 0.6rem;
       text-align: center;
       color: #aaccff;
-      font-family: monospace;
     }
 
     .spell-actions {
@@ -311,34 +317,49 @@
 
     .cast-btn { background: #00aacc; color: white; }
     .cast-btn:hover { background: cyan; color: black; box-shadow: 0 0 12px cyan;}
+    .rename-btn { background: #7a3a9a; color: white; }
     .delete-btn { background: #cc3366; color: white; }
 
-    /* Last Page - Custom Image */
-    .last-page {
-      background: linear-gradient(135deg, rgba(30, 20, 55, 0.95), rgba(20, 10, 45, 0.95));
-      text-align: center;
-      padding: 2rem;
+    /* Navigation Arrows */
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 30;
+      transition: 0.3s;
+      border: 1px solid #ff66cc;
     }
 
-    .last-page img {
-      max-width: 80%;
-      border-radius: 20px;
-      border: 2px solid #ff66cc;
-      margin: 1rem 0;
+    .nav-arrow:hover {
+      background: rgba(0, 255, 255, 0.3);
+      transform: translateY(-50%) scale(1.1);
+      border-color: cyan;
     }
+
+    .nav-prev { left: 20px; }
+    .nav-next { right: 20px; }
 
     /* Add Spell Section */
     .ritual-altar {
-      background: rgba(20, 10, 40, 0.85);
+      background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(16px);
-      padding: 0.8rem 1.2rem;
-      margin: 0 1rem 1rem 1rem;
-      border-radius: 60px;
+      padding: 0.7rem 1rem;
       display: flex;
       flex-wrap: wrap;
       gap: 0.6rem;
       justify-content: center;
-      border: 1px solid rgba(0, 255, 255, 0.4);
+      border-top: 1px solid rgba(0, 255, 255, 0.4);
+      z-index: 20;
     }
 
     .ancient-input {
@@ -370,10 +391,13 @@
 
     @media (max-width: 900px) {
       .spells-grid { grid-template-columns: repeat(3, 1fr); }
+      .current-page { width: 95%; height: 65vh; padding: 1rem; }
+      .nav-arrow { width: 40px; height: 40px; font-size: 1.5rem; }
     }
     @media (max-width: 600px) {
       .spells-grid { grid-template-columns: repeat(2, 1fr); }
-      .book-title { font-size: 1.2rem; }
+      .book-title { font-size: 1rem; }
+      .cover-content h1 { font-size: 2rem; }
     }
   </style>
 </head>
@@ -381,41 +405,44 @@
 
 <div id="canvas-container"></div>
 
-<!-- Book Cover with Custom Image -->
-<div class="book-cover-overlay" id="bookCover">
-  <div class="cover-image-container">
-    <!-- You can replace this image URL with your own image -->
-    <img id="coverImage" src="image.png" alt="Grimoire Cover">
-    <div class="cover-text">📖 GRIMOIRE OF SPELLS 📖</div>
-    <button class="enter-btn" id="enterBtn">🔮 OPEN THE BOOK 🔮</button>
+<!-- Enter Overlay with Fullscreen Cover Image -->
+<div class="enter-overlay" id="enterOverlay">
+  <img class="cover-bg" id="coverBgImg" src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070" alt="Cover Background">
+  <div class="cover-content">
+    <h1>📖 GRIMOIRE OF ETERNAL SPELLS 📖</h1>
+    <button class="enter-btn" id="enterBtn">🔮 OPEN THE GRIMOIRE 🔮</button>
   </div>
 </div>
 
 <!-- Main Grimoire UI -->
-<div class="grimoire-container" id="grimoireContainer">
+<div class="grimoire-ui" id="grimoireUI">
   <div class="book-header">
     <div class="book-title">
-      <span>⚜️</span> CODEX MAGICUS <span>📖</span> <span>✨</span> <span>🔮</span> <span>⚡</span>
+      <span>⚜️</span> CODEX MAGICUS <span>📖</span> <span>✨</span> <span>🔮</span> <span>⚡</span> <span>🐉</span>
     </div>
-    <div style="font-size: 0.7rem;">✦ Each page holds 12 spells (4x3 grid) | Pages grow automatically ✦</div>
   </div>
 
   <div class="stats-bar">
     <div class="stats-item"><span>📜</span> SPELLS: <strong id="totalSpells">0</strong></div>
-    <div class="stats-item"><span>📖</span> PAGES: <strong id="totalPages">0</strong></div>
-    <div class="stats-item"><span>💾</span> STORAGE: <strong id="storageStatus">IndexedDB</strong></div>
-    <button id="clearAllBtn" class="magic-btn" style="background:#a03366; padding:0.3rem 1rem;">💀 PURGE ALL</button>
-    <button id="exportBtn" class="magic-btn" style="background:#2a5e3a; padding:0.3rem 1rem;">💾 EXPORT</button>
-    <button id="importBtn" class="magic-btn" style="background:#5e3a2a; padding:0.3rem 1rem;">📥 IMPORT</button>
+    <div class="stats-item"><span>📖</span> PAGE: <strong id="currentPageNum">1</strong> / <strong id="totalPages">1</strong></div>
+    <div class="stats-item"><span>💾</span> FILES: <strong id="fileCount">0</strong> saved</div>
+    <button id="clearAllBtn" class="magic-btn" style="background:#a03366; padding:0.3rem 0.8rem;">💀 PURGE</button>
+    <button id="exportBtn" class="magic-btn" style="background:#2a5e3a; padding:0.3rem 0.8rem;">💾 EXPORT</button>
+    <button id="importBtn" class="magic-btn" style="background:#5e3a2a; padding:0.3rem 0.8rem;">📥 IMPORT</button>
     <input type="file" id="importFile" accept=".json" style="display:none;">
   </div>
 
-  <!-- Book Pages Wrapper -->
-  <div class="book-pages-wrapper" id="bookPagesWrapper">
-    <div id="pagesContainer"></div>
+  <!-- Page Container with Navigation -->
+  <div class="page-container">
+    <div class="nav-arrow nav-prev" id="prevPage">◀</div>
+    <div class="current-page" id="currentPage">
+      <img class="page-bg-img" id="pageBgImg" src="https://images.unsplash.com/photo-1538370965046-79c0d6907d47?q=80&w=2069" alt="Page Background">
+      <div class="page-content" id="pageContent"></div>
+    </div>
+    <div class="nav-arrow nav-next" id="nextPage">▶</div>
   </div>
 
-  <!-- Ritual Altar -->
+  <!-- Add Spell Section -->
   <div class="ritual-altar">
     <input type="file" id="fileInput" multiple style="background:#0a0520; border:1px solid #ff66cc; border-radius:50px; padding:0.4rem 0.8rem; color:white; font-size:0.8rem;">
     <button id="uploadBtn" class="magic-btn">✨ ENCHANT FILE ✨</button>
@@ -437,7 +464,6 @@
 
   const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 2, 16);
-  camera.lookAt(0, 1, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -457,17 +483,16 @@
   magicLight.position.set(4, 3, 4);
   scene.add(magicLight);
 
-  // Floating Magic Orbs with Emoji Colors
+  // Floating Orbs
   const orbGroup = new THREE.Group();
   const orbs = [];
-  const colors = [0xff66cc, 0x00ffff, 0xffaa44, 0xaa66ff];
-  for (let i = 0; i < 60; i++) {
-    const geo = new THREE.SphereGeometry(0.1, 8, 8);
-    const mat = new THREE.MeshStandardMaterial({ color: colors[i % colors.length], emissive: 0x331133 });
+  for (let i = 0; i < 80; i++) {
+    const geo = new THREE.SphereGeometry(0.08, 8, 8);
+    const mat = new THREE.MeshStandardMaterial({ color: [0xff66cc, 0x00ffff, 0xffaa44][i%3], emissive: 0x331133 });
     const orb = new THREE.Mesh(geo, mat);
     orb.userData = {
-      radius: 1.5 + Math.random() * 3,
-      speed: 0.002 + Math.random() * 0.01,
+      radius: 1.5 + Math.random() * 3.5,
+      speed: 0.002 + Math.random() * 0.015,
       angle: Math.random() * Math.PI * 2,
       yBase: (Math.random() - 0.5) * 4
     };
@@ -497,17 +522,17 @@
   ring2.rotation.z = Math.PI / 3;
   scene.add(ring2);
 
-  // Particles System (3D Emojis effect)
-  const particleCount = 800;
+  // Particles
+  const particleCount = 1500;
   const particleGeo = new THREE.BufferGeometry();
   const particlePos = [];
   for (let i = 0; i < particleCount; i++) {
-    particlePos.push((Math.random() - 0.5) * 200);
-    particlePos.push((Math.random() - 0.5) * 100);
-    particlePos.push((Math.random() - 0.5) * 80 - 40);
+    particlePos.push((Math.random() - 0.5) * 250);
+    particlePos.push((Math.random() - 0.5) * 120);
+    particlePos.push((Math.random() - 0.5) * 100 - 50);
   }
   particleGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(particlePos), 3));
-  const particleMat = new THREE.PointsMaterial({ color: 0xffaaff, size: 0.07 });
+  const particleMat = new THREE.PointsMaterial({ color: 0xffaaff, size: 0.06 });
   const particles = new THREE.Points(particleGeo, particleMat);
   scene.add(particles);
 
@@ -517,7 +542,6 @@
     time3d += 0.012;
     
     crystal.rotation.y = time3d * 0.4;
-    crystal.rotation.x = Math.sin(time3d * 0.6) * 0.2;
     ring.rotation.z += 0.007;
     ring2.rotation.x += 0.005;
     ring2.rotation.y += 0.006;
@@ -530,10 +554,8 @@
       orb.position.y = Math.sin(d.angle * 1.5) * 0.6 + d.yBase;
     });
     
-    particles.rotation.y += 0.0005;
-    particles.rotation.x += 0.0003;
+    particles.rotation.y += 0.0003;
     magicLight.intensity = 0.5 + Math.sin(time3d) * 0.3;
-    
     camera.position.x += (Math.sin(time3d * 0.1) * 0.1 - camera.position.x) * 0.02;
     camera.lookAt(0, 1, 0);
     
@@ -548,11 +570,13 @@
   });
 
   // ==================== INDEXEDDB STORAGE (PERMANENT) ====================
-  const DB_NAME = 'Grimoire_Spellbook_DB';
-  const DB_VERSION = 6;
+  const DB_NAME = 'Grimoire_Spellbook_DB_v2';
+  const DB_VERSION = 7;
   const STORE_NAME = 'spells';
   let db = null;
   let spells = [];
+  let currentPage = 0;
+  let totalPages = 1;
 
   function openDB() {
     return new Promise((resolve, reject) => {
@@ -636,77 +660,58 @@
   }
 
   function getRandomEmoji() {
-    const emojis = ['🔮', '✨', '⚡', '🔥', '💧', '🌪️', '❄️', '🌈', '⭐', '🌙', '💀', '👁️', '🐉', '🗡️', '🛡️', '📜', '🎴', '🌀', '💫', '🌟'];
+    const emojis = ['🔮', '✨', '⚡', '🔥', '💧', '🌪️', '❄️', '🌈', '⭐', '🌙', '💀', '👁️', '🐉', '🗡️', '🛡️', '📜', '🎴', '🌀', '💫', '🌟', '🎭', '🔱', '⚜️'];
     return emojis[Math.floor(Math.random() * emojis.length)];
   }
 
-  // Render Book Pages - 4x3 Grid (12 spells per page)
-  async function renderBook() {
+  // Render Current Page
+  async function renderCurrentPage() {
     spells = await getAllSpells();
-    const totalSpellsSpan = document.getElementById('totalSpells');
-    const totalPagesSpan = document.getElementById('totalPages');
-    totalSpellsSpan.textContent = spells.length;
-    
     const spellsPerPage = 12;
-    const pageCount = Math.ceil(spells.length / spellsPerPage);
-    totalPagesSpan.textContent = pageCount || 1;
+    totalPages = Math.max(1, Math.ceil(spells.length / spellsPerPage));
+    if (currentPage >= totalPages) currentPage = totalPages - 1;
+    if (currentPage < 0) currentPage = 0;
     
-    const pagesContainer = document.getElementById('pagesContainer');
+    document.getElementById('totalSpells').textContent = spells.length;
+    document.getElementById('totalPages').textContent = totalPages;
+    document.getElementById('currentPageNum').textContent = currentPage + 1;
     
-    let html = '';
+    const start = currentPage * spellsPerPage;
+    const pageSpells = spells.slice(start, start + spellsPerPage);
+    const pageNum = currentPage + 1;
     
-    // Normal Pages
-    for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
-      const start = pageIdx * spellsPerPage;
-      const pageSpells = spells.slice(start, start + spellsPerPage);
-      const pageNum = pageIdx + 1;
-      
-      html += `<div class="book-page" data-page="${pageIdx}">
-        <div class="page-header">
-          <span class="page-number">📖 Page ${pageNum} • ${pageSpells.length} Spells</span>
-          <span class="page-decoration">${getRandomEmoji()} ${getRandomEmoji()} ${getRandomEmoji()}</span>
-        </div>
-        <div class="spells-grid" id="page-${pageIdx}">
-      `;
-      
-      for (const spell of pageSpells) {
-        const spellEmoji = getRandomEmoji();
-        html += `
-          <div class="spell-card" data-id="${spell.id}">
-            <div class="spell-emoji">${spellEmoji}</div>
-            <div class="spell-name">${escapeHtml(spell.name.length > 25 ? spell.name.substring(0, 22) + '...' : spell.name)}</div>
-            <div class="spell-type">${spell.isFile ? `📀 ${spell.sizeDisplay}` : '🔗 Link Spell'}</div>
-            <div class="spell-actions">
-              <button class="spell-btn cast-btn" data-action="cast" data-id="${spell.id}">⚡ CAST</button>
-              <button class="spell-btn delete-btn" data-action="delete" data-id="${spell.id}">🗑️ DEL</button>
-            </div>
+    let html = `
+      <div class="page-header-info">
+        <span class="page-number">📖 Page ${pageNum} of ${totalPages}</span>
+        <span class="page-decoration">${getRandomEmoji()} ${getRandomEmoji()} ${getRandomEmoji()}</span>
+      </div>
+      <div class="spells-grid">
+    `;
+    
+    for (const spell of pageSpells) {
+      const spellEmoji = getRandomEmoji();
+      html += `
+        <div class="spell-card" data-id="${spell.id}">
+          <div class="spell-emoji">${spellEmoji}</div>
+          <div class="spell-name">${escapeHtml(spell.name.length > 25 ? spell.name.substring(0, 22) + '...' : spell.name)}</div>
+          <div class="spell-type">${spell.isFile ? `📀 ${spell.sizeDisplay}` : '🔗 Link Spell'}</div>
+          <div class="spell-actions">
+            <button class="spell-btn cast-btn" data-action="cast" data-id="${spell.id}">⚡ CAST</button>
+            <button class="spell-btn rename-btn" data-action="rename" data-id="${spell.id}">✏️ RENAME</button>
+            <button class="spell-btn delete-btn" data-action="delete" data-id="${spell.id}">🗑️ DEL</button>
           </div>
-        `;
-      }
-      
-      // Fill empty slots if any
-      const remaining = spellsPerPage - pageSpells.length;
-      for (let i = 0; i < remaining; i++) {
-        html += `<div class="spell-card" style="opacity:0.5; border-left-color:#444;"><div class="spell-emoji">📖</div><div class="spell-name">Empty Page</div><div class="spell-type">Awaiting Spell...</div><div class="spell-actions"><button class="spell-btn" disabled style="background:#444;">—</button></div></div>`;
-      }
-      
-      html += `</div></div>`;
+        </div>
+      `;
     }
     
-    // Last Page with Custom Image
-    html += `<div class="book-page last-page">
-      <div class="page-header">
-        <span class="page-number">📖 Final Page • The End</span>
-        <span class="page-decoration">✨ 🌟 ⭐</span>
-      </div>
-      <div style="text-align:center;">
-        <img id="lastPageImage" src="image.png" alt="Grimoire End" style="max-width:80%; border-radius:20px; margin:1rem 0;">
-        <p style="color:#ffaaee;">✦ The Grimoire holds infinite possibilities ✦</p>
-        <p style="font-size:0.8rem;">Add more spells to create new pages...</p>
-      </div>
-    </div>`;
+    const remaining = spellsPerPage - pageSpells.length;
+    for (let i = 0; i < remaining; i++) {
+      html += `<div class="spell-card" style="opacity:0.5;"><div class="spell-emoji">📖</div><div class="spell-name">Empty Slot</div><div class="spell-type">Awaiting Spell...</div><div class="spell-actions"><button class="spell-btn" disabled style="background:#444;">—</button></div></div>`;
+    }
     
-    pagesContainer.innerHTML = html;
+    html += `</div>`;
+    
+    document.getElementById('pageContent').innerHTML = html;
     
     // Attach events
     document.querySelectorAll('.cast-btn').forEach(btn => {
@@ -715,9 +720,7 @@
         const id = btn.getAttribute('data-id');
         const spell = spells.find(s => s.id === id);
         if (spell) {
-          const card = btn.closest('.spell-card');
-          gsap.to(card, { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
-          
+          gsap.to(btn.closest('.spell-card'), { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
           if (spell.isFile && spell.fileBase64) {
             const blob = base64ToBlob(spell.fileBase64, spell.mimeType);
             const url = URL.createObjectURL(blob);
@@ -725,7 +728,23 @@
             setTimeout(() => URL.revokeObjectURL(url), 60000);
           } else if (spell.urlPath) {
             window.open(spell.urlPath, '_blank');
-          } else alert('No spell content to cast!');
+          } else alert('No spell content!');
+        }
+      });
+    });
+    
+    document.querySelectorAll('.rename-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const newName = prompt('✏️ Rename your spell:', spells.find(s => s.id === id)?.name);
+        if (newName && newName.trim()) {
+          const spell = spells.find(s => s.id === id);
+          if (spell) {
+            spell.name = newName.trim();
+            await saveSpell(spell);
+            await renderCurrentPage();
+          }
         }
       });
     });
@@ -733,10 +752,10 @@
     document.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm('Dispel this spell from the grimoire?')) {
+        if (confirm('Dispel this spell?')) {
           const id = btn.getAttribute('data-id');
           await deleteSpell(id);
-          await renderBook();
+          await renderCurrentPage();
         }
       });
     });
@@ -749,6 +768,23 @@
       if (m === '>') return '&gt;';
       return m;
     });
+  }
+
+  // Navigation
+  function nextPage() {
+    if (currentPage + 1 < totalPages) {
+      currentPage++;
+      renderCurrentPage();
+      gsap.fromTo('.current-page', { scale: 0.95, opacity: 0.5 }, { scale: 1, opacity: 1, duration: 0.4 });
+    }
+  }
+  
+  function prevPage() {
+    if (currentPage > 0) {
+      currentPage--;
+      renderCurrentPage();
+      gsap.fromTo('.current-page', { scale: 0.95, opacity: 0.5 }, { scale: 1, opacity: 1, duration: 0.4 });
+    }
   }
 
   // Add File Spell
@@ -766,9 +802,8 @@
       };
       await saveSpell(spell);
     }
-    await renderBook();
-    const wrapper = document.getElementById('bookPagesWrapper');
-    wrapper.scrollTop = wrapper.scrollHeight;
+    await renderCurrentPage();
+    document.getElementById('fileCount').textContent = (await getAllSpells()).filter(s => s.isFile).length;
   }
 
   // Add URL Spell
@@ -784,15 +819,13 @@
       sizeDisplay: 'Link Spell'
     };
     await saveSpell(spell);
-    await renderBook();
-    const wrapper = document.getElementById('bookPagesWrapper');
-    wrapper.scrollTop = wrapper.scrollHeight;
+    await renderCurrentPage();
   }
 
   // Export/Import
   async function exportGrimoire() {
     const allSpells = await getAllSpells();
-    const exportData = { version: 6, exportDate: new Date().toISOString(), spells: allSpells };
+    const exportData = { version: 7, exportDate: new Date().toISOString(), spells: allSpells };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -813,31 +846,28 @@
           const newSpell = { ...spell, id: generateId() };
           await saveSpell(newSpell);
         }
-        await renderBook();
+        await renderCurrentPage();
         alert(`✨ Imported ${importedSpells.length} spells!`);
-      } catch(err) { alert('Invalid grimoire file'); }
+      } catch(err) { alert('Invalid file'); }
     };
     reader.readAsText(file);
   }
 
   // Enter Animation
-  const bookCover = document.getElementById('bookCover');
-  const grimoireContainer = document.getElementById('grimoireContainer');
+  const enterOverlay = document.getElementById('enterOverlay');
+  const grimoireUI = document.getElementById('grimoireUI');
   const enterBtn = document.getElementById('enterBtn');
   
   enterBtn.addEventListener('click', () => {
-    gsap.to(bookCover, {
+    gsap.to(enterOverlay, {
       duration: 0.8,
       rotationY: -90,
       transformOrigin: "left center",
       ease: "power2.inOut",
       onComplete: () => {
-        bookCover.style.display = 'none';
-        grimoireContainer.classList.add('open');
-        gsap.fromTo('.book-page', 
-          { rotationY: -90, opacity: 0 },
-          { rotationY: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: "back.out(1.2)" }
-        );
+        enterOverlay.style.display = 'none';
+        grimoireUI.classList.add('open');
+        gsap.fromTo('.current-page', { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, delay: 0.2 });
       }
     });
   });
@@ -845,13 +875,17 @@
   // Initialize
   async function init() {
     await openDB();
-    await renderBook();
-    console.log('📖 Grimoire Ready! Spells persist forever.');
+    await renderCurrentPage();
+    document.getElementById('fileCount').textContent = (await getAllSpells()).filter(s => s.isFile).length;
+    console.log('📖 Grimoire Ready! Files saved permanently in IndexedDB.');
   }
 
   // Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
     init();
+    
+    document.getElementById('prevPage').addEventListener('click', prevPage);
+    document.getElementById('nextPage').addEventListener('click', nextPage);
     
     const uploadBtn = document.getElementById('uploadBtn');
     const fileInput = document.getElementById('fileInput');
@@ -872,16 +906,17 @@
     addUrlBtn.addEventListener('click', async () => {
       const name = spellName.value;
       const url = spellUrl.value;
-      if (!name && !url) { alert('Name your spell and provide a path!'); return; }
+      if (!name && !url) { alert('Name and path required!'); return; }
       await addUrlSpell(name, url);
       spellName.value = '';
       spellUrl.value = '';
     });
     
     clearAllBtn.addEventListener('click', async () => {
-      if (confirm('⚠️ This will banish ALL spells! Continue?')) {
+      if (confirm('⚠️ Banish ALL spells? This is permanent!')) {
         await clearAllSpells();
-        await renderBook();
+        await renderCurrentPage();
+        document.getElementById('fileCount').textContent = 0;
       }
     });
     
@@ -891,11 +926,12 @@
       if (e.target.files.length) {
         await importGrimoire(e.target.files[0]);
         importFile.value = '';
+        document.getElementById('fileCount').textContent = (await getAllSpells()).filter(s => s.isFile).length;
       }
     });
     
     const altar = document.querySelector('.ritual-altar');
-    altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.border = '3px solid cyan'; });
+    altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.border = '2px solid cyan'; });
     altar.addEventListener('dragleave', () => { altar.style.border = ''; });
     altar.addEventListener('drop', async (e) => {
       e.preventDefault();
