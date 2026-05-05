@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>✨ Grimoire of Eternal Spells | 3D Anime Spellbook ✨</title>
+  <title>📖 Ancient Grimoire | 3D Spellbook Vault 📖</title>
   <!-- Three.js -->
   <script type="importmap">
     {
@@ -17,17 +17,16 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      user-select: none;
     }
 
     body {
-      font-family: 'Poppins', 'Segoe UI', 'Cinema', 'Orbitron', monospace;
+      font-family: 'Cinema', 'Poppins', 'Segoe UI', 'Orbitron', monospace;
       overflow: hidden;
-      background: #050510;
-      color: #f0eaff;
+      background: #0a0515;
+      color: #f0e6ff;
     }
 
-    /* 3D Canvas Background */
+    /* 3D Canvas */
     #canvas-container {
       position: fixed;
       top: 0;
@@ -37,30 +36,85 @@
       z-index: 0;
     }
 
-    /* UI Overlay - Grimoire Book Style */
+    /* Book Cover Overlay - Initial State */
+    .book-cover-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 20%, #1a0a2e, #050210);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+    }
+
+    .book-cover {
+      text-align: center;
+      animation: coverGlow 2s infinite alternate;
+      transform-style: preserve-3d;
+    }
+
+    @keyframes coverGlow {
+      0% { text-shadow: 0 0 20px #ff44cc, 0 0 40px #00ffff; transform: scale(1);}
+      100% { text-shadow: 0 0 50px #ff66ff, 0 0 80px #00ffff; transform: scale(1.05);}
+    }
+
+    .book-cover h1 {
+      font-size: 4rem;
+      background: linear-gradient(135deg, #ffcc44, #ff66cc, #00ffff);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: 8px;
+    }
+
+    .book-cover p {
+      margin-top: 1rem;
+      color: #ccaaee;
+      font-size: 1.2rem;
+    }
+
+    .open-book-btn {
+      margin-top: 2rem;
+      background: linear-gradient(145deg, #2a1a5e, #120a30);
+      border: 2px solid #ff66cc;
+      padding: 0.8rem 2rem;
+      border-radius: 60px;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .open-book-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 30px cyan;
+      border-color: cyan;
+    }
+
+    /* Main UI - Hidden Initially */
     .grimoire-ui {
       position: relative;
       z-index: 10;
       width: 100%;
       height: 100vh;
       overflow-y: auto;
-      padding: 1.5rem;
-      background: radial-gradient(circle at 20% 30%, rgba(5, 5, 30, 0.4), rgba(0, 0, 0, 0.7));
-      backdrop-filter: blur(5px);
-      scroll-behavior: smooth;
+      padding: 1.2rem;
+      background: radial-gradient(circle at 20% 30%, rgba(10, 5, 25, 0.6), rgba(0, 0, 0, 0.8));
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 1s ease;
+      pointer-events: none;
     }
 
-    /* Custom Scrollbar */
-    .grimoire-ui::-webkit-scrollbar {
-      width: 8px;
-    }
-    .grimoire-ui::-webkit-scrollbar-track {
-      background: #1a0f2e;
-      border-radius: 10px;
-    }
-    .grimoire-ui::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #ff66cc, #00ffff);
-      border-radius: 10px;
+    .grimoire-ui.open {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .container {
@@ -68,290 +122,207 @@
       margin: 0 auto;
     }
 
-    /* Spellbook Header */
-    .spellbook-header {
+    /* Ancient Header */
+    .ancient-header {
       text-align: center;
-      margin-bottom: 2rem;
-      animation: floatGlow 3s infinite alternate;
-      position: relative;
+      margin-bottom: 1.5rem;
+      animation: floatRune 3s infinite alternate;
     }
 
-    @keyframes floatGlow {
-      0% { text-shadow: 0 0 5px #ff44cc, 0 0 10px #00ffff; transform: translateY(0px);}
-      100% { text-shadow: 0 0 25px #ff66ff, 0 0 35px #00ffff; transform: translateY(-5px);}
+    @keyframes floatRune {
+      0% { transform: translateY(0px); text-shadow: 0 0 5px #ff44cc;}
+      100% { transform: translateY(-5px); text-shadow: 0 0 25px #00ffff;}
     }
 
     .title {
-      font-size: 3.2rem;
+      font-size: 2.5rem;
       font-weight: 900;
-      background: linear-gradient(135deg, #ff99cc, #ff44aa, #00ffff, #ffcc44);
+      background: linear-gradient(135deg, #ffcc66, #ff66cc, #66ffff);
       background-clip: text;
       -webkit-background-clip: text;
       color: transparent;
-      letter-spacing: 5px;
+      letter-spacing: 4px;
     }
 
     .sub {
-      color: #ccddff;
-      background: rgba(0, 0, 0, 0.6);
-      display: inline-block;
-      padding: 0.3rem 1.5rem;
-      border-radius: 50px;
-      backdrop-filter: blur(10px);
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
+      color: #bbaaee;
+      font-size: 0.85rem;
     }
 
-    /* Stats Bar */
-    .stats-bar {
-      background: rgba(20, 10, 40, 0.7);
-      backdrop-filter: blur(12px);
-      border-radius: 60px;
-      padding: 0.8rem 1.5rem;
-      margin-bottom: 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-      border: 1px solid rgba(0, 255, 255, 0.4);
-    }
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-    }
-
-    /* Add Spell Section - Ritual Circle Style */
-    .ritual-circle {
-      background: rgba(30, 15, 55, 0.8);
+    /* Ritual Altar - Add Spell Section */
+    .ritual-altar {
+      background: rgba(20, 10, 40, 0.75);
       backdrop-filter: blur(16px);
-      border-radius: 80px;
-      padding: 1.5rem 2rem;
-      margin-bottom: 2rem;
-      border: 2px solid;
+      border-radius: 60px;
+      padding: 1.2rem 1.8rem;
+      margin-bottom: 1.8rem;
+      border: 1px solid;
       border-image: linear-gradient(135deg, #ff66cc, #00ffff) 1;
-      animation: borderRotate 4s infinite alternate;
-      box-shadow: 0 0 40px rgba(0,255,255,0.2);
+      animation: borderPulse 3s infinite alternate;
     }
 
-    @keyframes borderRotate {
-      0% { border-color: #ff66cc; box-shadow: 0 0 20px rgba(255,102,204,0.3);}
-      100% { border-color: #00ffff; box-shadow: 0 0 40px rgba(0,255,255,0.5);}
+    @keyframes borderPulse {
+      0% { border-color: #ff66cc; box-shadow: 0 0 15px rgba(255,102,204,0.3);}
+      100% { border-color: #00ffff; box-shadow: 0 0 35px rgba(0,255,255,0.5);}
     }
 
     .form-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 0.8rem;
       justify-content: center;
     }
 
-    .spell-input {
+    .ancient-input {
       background: rgba(0, 0, 0, 0.8);
       border: 1px solid #ff66cc;
-      padding: 0.8rem 1.2rem;
+      padding: 0.7rem 1.2rem;
       border-radius: 50px;
       color: white;
       font-family: monospace;
       flex: 1;
-      min-width: 200px;
-      transition: 0.2s;
-    }
-
-    .spell-input:focus {
-      outline: none;
-      border-color: cyan;
-      box-shadow: 0 0 15px cyan;
+      min-width: 180px;
     }
 
     .magic-btn {
       background: linear-gradient(145deg, #2a1a5e, #120a30);
       border: none;
-      padding: 0.8rem 1.8rem;
+      padding: 0.7rem 1.5rem;
       border-radius: 50px;
       color: white;
       font-weight: bold;
       cursor: pointer;
       transition: 0.3s;
-      position: relative;
-      overflow: hidden;
     }
 
     .magic-btn:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 0 25px cyan;
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px cyan;
     }
 
-    .magic-btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(0,255,255,0.4), transparent);
-      transition: left 0.5s;
+    /* Pages Container - Like Book Pages */
+    .pages-container {
+      background: rgba(25, 15, 45, 0.5);
+      border-radius: 30px;
+      padding: 1rem;
+      margin-top: 1rem;
+      max-height: 55vh;
+      overflow-y: auto;
     }
 
-    .magic-btn:hover::before {
-      left: 100%;
-    }
-
-    .file-zone {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: rgba(0,0,0,0.5);
-      border-radius: 60px;
-      padding: 0.3rem 1rem;
-    }
-
-    /* Spell Grid - Magical Cards */
+    /* Spell Cards as Ancient Pages */
     .spell-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.8rem;
-      margin-top: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
     }
 
-    .spell-card {
-      background: rgba(15, 8, 35, 0.85);
-      backdrop-filter: blur(12px);
-      border-radius: 30px;
-      padding: 1.2rem;
-      border: 1px solid rgba(255, 100, 200, 0.6);
-      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      cursor: pointer;
+    .spell-page {
+      background: linear-gradient(145deg, #1a0f2e, #0a0518);
+      border-radius: 20px;
+      padding: 1rem;
+      border-left: 4px solid #ff66cc;
+      border-right: 1px solid #00ffff;
+      transition: all 0.3s;
+      animation: pageFade 0.5s ease;
       position: relative;
       overflow: hidden;
-      animation: cardEnter 0.5s ease-out;
     }
 
-    @keyframes cardEnter {
+    @keyframes pageFade {
       from {
         opacity: 0;
-        transform: translateY(30px) rotateX(-10deg);
+        transform: translateX(30px) rotateY(-10deg);
       }
       to {
         opacity: 1;
-        transform: translateY(0) rotateX(0);
+        transform: translateX(0) rotateY(0);
       }
     }
 
-    .spell-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      border-color: cyan;
-      box-shadow: 0 0 35px rgba(0,255,255,0.4);
-    }
-
-    /* Spell Animation on Add */
-    .spell-card.adding {
-      animation: spellSummon 0.8s cubic-bezier(0.34, 1.2, 0.64, 1);
-    }
-
-    @keyframes spellSummon {
-      0% {
-        transform: scale(0) rotate(-180deg);
-        opacity: 0;
-        filter: blur(10px);
-      }
-      50% {
-        transform: scale(1.1) rotate(5deg);
-      }
-      100% {
-        transform: scale(1) rotate(0);
-        opacity: 1;
-        filter: blur(0);
-      }
+    .spell-page:hover {
+      transform: translateY(-5px) scale(1.02);
+      border-left-color: cyan;
+      box-shadow: 0 0 30px rgba(0,255,255,0.3);
     }
 
     .spell-icon {
-      font-size: 2.5rem;
-      filter: drop-shadow(0 0 10px magenta);
-      animation: iconGlow 2s infinite alternate;
-      display: inline-block;
+      font-size: 2rem;
+      filter: drop-shadow(0 0 8px magenta);
+      animation: iconPulse 2s infinite alternate;
     }
 
-    @keyframes iconGlow {
+    @keyframes iconPulse {
       0% { filter: drop-shadow(0 0 5px #ff44cc);}
       100% { filter: drop-shadow(0 0 20px #00ffff);}
     }
 
     .spell-name {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: bold;
       margin: 0.5rem 0;
       word-break: break-word;
-      background: linear-gradient(135deg, #fff, #ffccff);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
+      color: #ffddff;
     }
 
-    .spell-type {
+    .spell-rune {
       font-size: 0.7rem;
       color: #aaccff;
       font-family: monospace;
-      margin-bottom: 0.5rem;
     }
 
     .spell-actions {
       display: flex;
-      gap: 0.8rem;
-      margin-top: 1rem;
+      gap: 0.6rem;
+      margin-top: 0.8rem;
     }
 
-    .spell-btn {
+    .page-btn {
       flex: 1;
-      padding: 0.5rem;
-      border-radius: 40px;
+      padding: 0.4rem;
+      border-radius: 30px;
       border: none;
       font-weight: bold;
       cursor: pointer;
+      font-size: 0.75rem;
       transition: 0.2s;
-      font-size: 0.8rem;
     }
 
-    .cast-btn {
-      background: linear-gradient(135deg, #00aacc, #0077aa);
-      color: white;
-    }
-    .cast-btn:hover { background: cyan; color: black; box-shadow: 0 0 15px cyan; transform: scale(1.02);}
+    .cast-btn { background: #00aacc; color: white; }
+    .cast-btn:hover { background: cyan; color: black; box-shadow: 0 0 15px cyan;}
 
-    .rename-btn {
-      background: #7a3a9a;
-      color: white;
-    }
-    .delete-btn {
-      background: #cc3366;
-      color: white;
-    }
+    .rename-btn { background: #7a3a9a; color: white; }
+    .delete-btn { background: #cc3366; color: white; }
 
-    .empty-grimoire {
+    .empty-pages {
       text-align: center;
-      padding: 4rem;
-      background: rgba(0,0,0,0.5);
-      border-radius: 60px;
+      padding: 3rem;
+      color: #aa88ff;
     }
 
-    /* Backup Section */
-    .backup-section {
-      margin-top: 2rem;
+    /* Stats & Backup */
+    .stats-row {
       display: flex;
-      gap: 1rem;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap;
-      padding: 1rem;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
       background: rgba(0,0,0,0.4);
-      border-radius: 60px;
+      border-radius: 50px;
+    }
+
+    .backup-bar {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
     }
 
     @media (max-width: 700px) {
-      .title { font-size: 1.8rem; }
-      .ritual-circle { padding: 1rem; }
+      .title { font-size: 1.5rem; }
+      .book-cover h1 { font-size: 2rem; }
+      .spell-grid { grid-template-columns: 1fr; }
       .form-row { flex-direction: column; }
     }
   </style>
@@ -360,46 +331,55 @@
 
 <div id="canvas-container"></div>
 
-<div class="grimoire-ui">
+<!-- Book Cover Overlay -->
+<div class="book-cover-overlay" id="bookCover">
+  <div class="book-cover">
+    <h1>📖 ANCIENT GRIMOIRE 📖</h1>
+    <p>✦ The Eternal Tome of Digital Spells ✦</p>
+    <button class="open-book-btn" id="openBookBtn">🔮 OPEN THE GRIMOIRE 🔮</button>
+  </div>
+</div>
+
+<!-- Main Grimoire UI -->
+<div class="grimoire-ui" id="grimoireUI">
   <div class="container">
-    <div class="spellbook-header">
-      <div class="title">📖 GRIMOIRE OF ETERNAL SPELLS 📖</div>
-      <div class="sub">✦ 3D ANIME DIMENSION | CAST FILES AS MAGIC SPELLS ✦</div>
+    <div class="ancient-header">
+      <div class="title">⚜️ CODEX OF ETERNAL SPELLS ⚜️</div>
+      <div class="sub">✦ Pages infused with ancient magic | Each spell is a file or link ✦</div>
     </div>
 
-    <div class="stats-bar">
-      <div class="stat-item">🔮 SPELLS IN GRIMOIRE: <strong id="spellCount">0</strong></div>
-      <div class="stat-item">⚡ MANA CRYSTALS: <strong id="manaCrystals">∞</strong></div>
-      <button id="clearAllBtn" class="magic-btn" style="background:#cc3366; padding:0.4rem 1.2rem;">💀 PURGE ALL SPELLS</button>
+    <div class="stats-row">
+      <span>📜 SPELLS BOUND: <strong id="spellCount">0</strong></span>
+      <span>🔮 MANA VEINS: <strong>∞</strong></span>
+      <button id="clearAllBtn" class="magic-btn" style="background:#a03366; padding:0.3rem 1rem;">💀 PURGE PAGES</button>
     </div>
 
-    <!-- Ritual Circle - Add Spell -->
-    <div class="ritual-circle">
+    <!-- Ritual Altar - Add Spells -->
+    <div class="ritual-altar">
       <div class="form-row">
-        <div class="file-zone">
-          <span>📁</span>
-          <input type="file" id="fileInput" multiple style="background:transparent; border:none; color:white;">
-        </div>
-        <button id="uploadBtn" class="magic-btn">✨ ENCHANT & ADD FILE ✨</button>
+        <input type="file" id="fileInput" multiple style="background:#0a0520; border:1px solid #ff66cc; border-radius:50px; padding:0.5rem 1rem; color:white;">
+        <button id="uploadBtn" class="magic-btn">✨ ENCHANT FILE ✨</button>
       </div>
-      <div class="form-row" style="margin-top: 1rem;">
-        <input type="text" id="spellName" class="spell-input" placeholder="Spell Name (e.g., Dragon Slayer)">
-        <input type="text" id="spellUrl" class="spell-input" placeholder="URL or Path (e.g., ./spells/fireball.html)">
+      <div class="form-row" style="margin-top: 0.8rem;">
+        <input type="text" id="spellName" class="ancient-input" placeholder="Spell Name (e.g., Dragon's Breath)">
+        <input type="text" id="spellUrl" class="ancient-input" placeholder="URL or Path (e.g., ./spells/fire.html)">
         <button id="addUrlBtn" class="magic-btn">🔗 FORGE LINK SPELL</button>
       </div>
     </div>
 
-    <!-- Spell Grid -->
-    <div id="spellGrid" class="spell-grid">
-      <div class="empty-grimoire">🌀 Summoning your grimoire... 🌀</div>
+    <!-- Book Pages Container -->
+    <div class="pages-container">
+      <div id="spellGrid" class="spell-grid">
+        <div class="empty-pages">🌀 The pages are blank... Add a spell to begin 🌀</div>
+      </div>
     </div>
 
-    <!-- Backup & Export -->
-    <div class="backup-section">
-      <button id="exportBtn" class="magic-btn" style="background:#2a5e3a;">💾 EXPORT GRIMOIRE (Backup)</button>
+    <!-- Backup & Cross-Device Sync -->
+    <div class="backup-bar" style="margin-top: 1rem; justify-content: center;">
+      <button id="exportBtn" class="magic-btn" style="background:#2a5e3a;">💾 EXPORT GRIMOIRE</button>
       <button id="importBtn" class="magic-btn" style="background:#5e3a2a;">📥 IMPORT GRIMOIRE</button>
       <input type="file" id="importFile" accept=".json" style="display:none;">
-      <span style="font-size:0.7rem; color:#aaa;">✨ Spells persist forever in your browser | Backup to carry across devices ✨</span>
+      <span style="font-size:0.7rem; color:#aa99ff;">✨ Spells persist forever in your browser | Export backup to carry across devices ✨</span>
     </div>
   </div>
 </div>
@@ -407,85 +387,84 @@
 <script type="module">
   import * as THREE from 'three';
 
-  // ========== 3D ANIME MAGICAL BACKGROUND ==========
+  // ==================== 3D ANCIENT MAGICAL BACKGROUND ====================
   const container = document.getElementById('canvas-container');
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x020210);
-  scene.fog = new THREE.FogExp2(0x020210, 0.002);
+  scene.background = new THREE.Color(0x050210);
+  scene.fog = new THREE.FogExp2(0x050210, 0.0025);
 
-  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 2, 14);
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 2, 15);
   camera.lookAt(0, 1, 0);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
-  // Lights
-  const ambient = new THREE.AmbientLight(0x332244);
+  // Lighting
+  const ambient = new THREE.AmbientLight(0x331144);
   scene.add(ambient);
   const mainLight = new THREE.DirectionalLight(0xffaaff, 1);
   mainLight.position.set(5, 8, 5);
   scene.add(mainLight);
-  const backLight = new THREE.PointLight(0xff44cc, 0.6);
-  backLight.position.set(-3, 2, -5);
+  const backLight = new THREE.PointLight(0xff44cc, 0.5);
+  backLight.position.set(-3, 2, -6);
   scene.add(backLight);
-  const colorLight = new THREE.PointLight(0x44aaff, 0.7);
-  colorLight.position.set(4, 3, 4);
-  scene.add(colorLight);
+  const magicLight = new THREE.PointLight(0x44aaff, 0.7);
+  magicLight.position.set(4, 3, 4);
+  scene.add(magicLight);
 
-  // Floating Magic Orbs
-  const orbGroup = new THREE.Group();
-  const orbCount = 30;
-  const orbs = [];
-  for (let i = 0; i < orbCount; i++) {
-    const geo = new THREE.SphereGeometry(0.12, 16, 16);
+  // Floating Ancient Runes (Spheres)
+  const runeGroup = new THREE.Group();
+  const runes = [];
+  for (let i = 0; i < 40; i++) {
+    const geo = new THREE.SphereGeometry(0.1, 8, 8);
     const mat = new THREE.MeshStandardMaterial({ color: 0xff66aa, emissive: 0x331133 });
-    const orb = new THREE.Mesh(geo, mat);
-    orb.userData = {
-      radius: 2.5 + Math.random() * 1.5,
-      speed: 0.005 + Math.random() * 0.01,
+    const rune = new THREE.Mesh(geo, mat);
+    rune.userData = {
+      radius: 2 + Math.random() * 2.5,
+      speed: 0.003 + Math.random() * 0.008,
       angle: Math.random() * Math.PI * 2,
-      yOffset: (Math.random() - 0.5) * 2
+      yBase: (Math.random() - 0.5) * 3
     };
-    orbGroup.add(orb);
-    orbs.push(orb);
+    runeGroup.add(rune);
+    runes.push(rune);
   }
-  scene.add(orbGroup);
+  scene.add(runeGroup);
 
-  // Central Magic Crystal
-  const crystalGeo = new THREE.IcosahedronGeometry(0.8, 0);
-  const crystalMat = new THREE.MeshStandardMaterial({ color: 0xff44aa, emissive: 0x441133, roughness: 0.2, metalness: 0.7 });
+  // Central Magic Crystal (The Grimoire's Heart)
+  const crystalGeo = new THREE.IcosahedronGeometry(0.7, 0);
+  const crystalMat = new THREE.MeshStandardMaterial({ color: 0xff44aa, emissive: 0x441133, roughness: 0.2, metalness: 0.8 });
   const crystal = new THREE.Mesh(crystalGeo, crystalMat);
   crystal.castShadow = true;
   crystal.position.set(0, 1, 0);
   scene.add(crystal);
 
-  // Floating Rings
-  const ringGeo = new THREE.TorusGeometry(1.2, 0.05, 64, 200);
+  // Floating Rings (Protective Circles)
+  const ringGeo = new THREE.TorusGeometry(1.1, 0.05, 64, 200);
   const ringMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x006666 });
   const ring = new THREE.Mesh(ringGeo, ringMat);
   ring.rotation.x = Math.PI / 2;
   scene.add(ring);
 
-  const ring2Geo = new THREE.TorusGeometry(1.6, 0.04, 64, 200);
+  const ring2Geo = new THREE.TorusGeometry(1.5, 0.04, 64, 200);
   const ring2Mat = new THREE.MeshStandardMaterial({ color: 0xff66cc, emissive: 0x331133 });
   const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
   ring2.rotation.z = Math.PI / 3;
   scene.add(ring2);
 
-  // Star Particles
-  const starCount = 1200;
+  // Star Field (Ancient Stars)
+  const starCount = 1500;
   const starGeo = new THREE.BufferGeometry();
   const starPos = [];
   for (let i = 0; i < starCount; i++) {
-    starPos.push((Math.random() - 0.5) * 200);
-    starPos.push((Math.random() - 0.5) * 100);
-    starPos.push((Math.random() - 0.5) * 80 - 40);
+    starPos.push((Math.random() - 0.5) * 250);
+    starPos.push((Math.random() - 0.5) * 120);
+    starPos.push((Math.random() - 0.5) * 100 - 50);
   }
   starGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(starPos), 3));
-  const starMat = new THREE.PointsMaterial({ color: 0xaaffff, size: 0.08 });
+  const starMat = new THREE.PointsMaterial({ color: 0xaaffff, size: 0.06 });
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
@@ -494,38 +473,41 @@
     requestAnimationFrame(animate3d);
     time3d += 0.012;
     
-    crystal.rotation.y = time3d * 0.4;
-    crystal.rotation.x = Math.sin(time3d * 0.6) * 0.2;
-    ring.rotation.z += 0.008;
-    ring2.rotation.x += 0.005;
-    ring2.rotation.y += 0.007;
+    crystal.rotation.y = time3d * 0.3;
+    crystal.rotation.x = Math.sin(time3d * 0.5) * 0.2;
+    ring.rotation.z += 0.006;
+    ring2.rotation.x += 0.004;
+    ring2.rotation.y += 0.005;
     
-    orbs.forEach(orb => {
-      const d = orb.userData;
+    runes.forEach(rune => {
+      const d = rune.userData;
       d.angle += d.speed;
-      orb.position.x = Math.cos(d.angle) * d.radius;
-      orb.position.z = Math.sin(d.angle) * d.radius;
-      orb.position.y = Math.sin(d.angle * 1.5) * 0.8 + d.yOffset;
+      rune.position.x = Math.cos(d.angle) * d.radius;
+      rune.position.z = Math.sin(d.angle) * d.radius;
+      rune.position.y = Math.sin(d.angle * 1.8) * 0.8 + d.yBase;
     });
     
-    stars.rotation.y += 0.0005;
-    stars.rotation.x += 0.0003;
+    stars.rotation.y += 0.0003;
+    stars.rotation.x += 0.0002;
     
-    camera.position.x += (Math.sin(time3d * 0.2) * 0.1 - camera.position.x) * 0.03;
+    magicLight.intensity = 0.6 + Math.sin(time3d) * 0.2;
+    
+    camera.position.x += (Math.sin(time3d * 0.15) * 0.1 - camera.position.x) * 0.02;
     camera.lookAt(0, 1, 0);
     
     renderer.render(scene, camera);
   }
   animate3d();
+  
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // ========== SPELLBOOK STORAGE (IndexedDB) ==========
-  const DB_NAME = 'Anime_Grimoire_DB';
-  const DB_VERSION = 3;
+  // ==================== GRIMOIRE STORAGE (IndexedDB - Permanent) ====================
+  const DB_NAME = 'Ancient_Grimoire_DB';
+  const DB_VERSION = 4;
   const STORE_NAME = 'spells';
   let db = null;
 
@@ -610,42 +592,33 @@
     return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   }
 
-  function getSpellIcon(name) {
+  function getSpellRune(name) {
     const ext = name.split('.').pop().toLowerCase();
-    const icons = { html: '🌐', css: '🎨', js: '⚡', png: '🖼️', jpg: '🖼️', mp4: '🎥', pdf: '📕', txt: '📄' };
-    return icons[ext] || '🔮';
+    const runes = { html: '🌐🔥', css: '🎨✨', js: '⚡🔮', png: '🖼️📜', jpg: '🖼️📜', mp4: '🎥🌀', pdf: '📕🔮', txt: '📄✨' };
+    return runes[ext] || '🔮📖';
   }
 
-  // Spell Animation Effect
-  async function castSpellAnimation(element) {
-    if (!element) return;
-    element.style.animation = 'none';
-    element.offsetHeight;
-    element.style.animation = 'spellSummon 0.6s cubic-bezier(0.34, 1.2, 0.64, 1)';
-    setTimeout(() => { if(element) element.style.animation = ''; }, 600);
-  }
-
-  // Render Grid with Magic
-  async function renderSpellGrid() {
+  // Render Pages as Ancient Spell Cards
+  async function renderSpellPages() {
     const spells = await getAllSpells();
     const grid = document.getElementById('spellGrid');
     const countSpan = document.getElementById('spellCount');
     countSpan.textContent = spells.length;
 
     if (spells.length === 0) {
-      grid.innerHTML = `<div class="empty-grimoire">📖 No spells yet... Add a file or create a link spell! 📖<br><span style="font-size:0.8rem;">Upload any file and it becomes a permanent magic spell</span></div>`;
+      grid.innerHTML = `<div class="empty-pages">📖 The ancient pages await your first spell...<br>Upload a file or forge a link!</div>`;
       return;
     }
 
     grid.innerHTML = spells.map(spell => `
-      <div class="spell-card" data-id="${spell.id}">
-        <div class="spell-icon">${getSpellIcon(spell.name)}</div>
+      <div class="spell-page" data-id="${spell.id}">
+        <div class="spell-icon">${getSpellRune(spell.name)}</div>
         <div class="spell-name">${escapeHtml(spell.name)}</div>
-        <div class="spell-type">${spell.isFile ? `📀 ${spell.sizeDisplay} • File Spell` : '🔗 Dimensional Link Spell'}</div>
+        <div class="spell-rune">${spell.isFile ? `📀 ${spell.sizeDisplay} • File Enchantment` : '🔗 Dimensional Link Spell'}</div>
         <div class="spell-actions">
-          <button class="spell-btn cast-btn" data-action="cast" data-id="${spell.id}">⚡ CAST SPELL</button>
-          <button class="spell-btn rename-btn" data-action="rename" data-id="${spell.id}">✏️ RENAME</button>
-          <button class="spell-btn delete-btn" data-action="delete" data-id="${spell.id}">🗑️ DISPEL</button>
+          <button class="page-btn cast-btn" data-action="cast" data-id="${spell.id}">⚡ CAST SPELL</button>
+          <button class="page-btn rename-btn" data-action="rename" data-id="${spell.id}">✏️ RENAME</button>
+          <button class="page-btn delete-btn" data-action="delete" data-id="${spell.id}">🗑️ DISPEL</button>
         </div>
       </div>
     `).join('');
@@ -655,20 +628,21 @@
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
-        const spell = (await getAllSpells()).find(s => s.id === id);
+        const spells = await getAllSpells();
+        const spell = spells.find(s => s.id === id);
         if (spell) {
-          const card = btn.closest('.spell-card');
-          castSpellAnimation(card);
-          setTimeout(() => {
-            if (spell.isFile && spell.fileBase64) {
-              const blob = base64ToBlob(spell.fileBase64, spell.mimeType);
-              const url = URL.createObjectURL(blob);
-              window.open(url, '_blank');
-              setTimeout(() => URL.revokeObjectURL(url), 60000);
-            } else if (spell.urlPath) {
-              window.open(spell.urlPath, '_blank');
-            } else alert('No spell content to cast!');
-          }, 200);
+          const card = btn.closest('.spell-page');
+          card.style.animation = 'pageFade 0.3s ease reverse';
+          setTimeout(() => { if(card) card.style.animation = ''; }, 300);
+          
+          if (spell.isFile && spell.fileBase64) {
+            const blob = base64ToBlob(spell.fileBase64, spell.mimeType);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+          } else if (spell.urlPath) {
+            window.open(spell.urlPath, '_blank');
+          } else alert('No spell content to cast!');
         }
       });
     });
@@ -684,7 +658,7 @@
           if (spell) {
             spell.name = newName.trim();
             await saveSpell(spell);
-            renderSpellGrid();
+            renderSpellPages();
           }
         }
       });
@@ -693,10 +667,10 @@
     document.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm('Dispel this spell forever?')) {
+        if (confirm('Dispel this spell from the grimoire?')) {
           const id = btn.getAttribute('data-id');
           await deleteSpell(id);
-          renderSpellGrid();
+          renderSpellPages();
         }
       });
     });
@@ -726,10 +700,10 @@
       };
       await saveSpell(spell);
     }
-    await renderSpellGrid();
-    // Trigger animation on new cards
-    const cards = document.querySelectorAll('.spell-card');
-    if (cards.length) cards[cards.length - 1].style.animation = 'spellSummon 0.7s ease-out';
+    await renderSpellPages();
+    // Add animation to new cards
+    const cards = document.querySelectorAll('.spell-page');
+    if (cards.length) cards[cards.length - 1].style.animation = 'pageFade 0.6s ease';
   }
 
   // Add URL Spell
@@ -745,23 +719,23 @@
       sizeDisplay: 'Link Spell'
     };
     await saveSpell(spell);
-    await renderSpellGrid();
-    const cards = document.querySelectorAll('.spell-card');
-    if (cards.length) cards[cards.length - 1].style.animation = 'spellSummon 0.7s ease-out';
+    await renderSpellPages();
+    const cards = document.querySelectorAll('.spell-page');
+    if (cards.length) cards[cards.length - 1].style.animation = 'pageFade 0.6s ease';
   }
 
-  // Export/Import
+  // Export/Import for Cross-Device
   async function exportGrimoire() {
     const spells = await getAllSpells();
-    const exportData = { version: 3, exportDate: new Date().toISOString(), spells };
+    const exportData = { version: 4, exportDate: new Date().toISOString(), spells };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `grimoire_backup_${Date.now()}.json`;
+    a.download = `ancient_grimoire_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    alert('✨ Grimoire exported! Save this sacred tome.');
+    alert('📖 Grimoire exported! Save this sacred tome to carry across devices.');
   }
 
   async function importGrimoire(file) {
@@ -774,18 +748,32 @@
           const newSpell = { ...spell, id: generateId() };
           await saveSpell(newSpell);
         }
-        await renderSpellGrid();
-        alert(`📖 Imported ${spells.length} spells into your grimoire!`);
+        await renderSpellPages();
+        alert(`✨ Imported ${spells.length} spells into your grimoire!`);
       } catch(err) { alert('Invalid grimoire file'); }
     };
     reader.readAsText(file);
   }
 
-  // Initialize
+  // Book Cover Logic
+  const bookCover = document.getElementById('bookCover');
+  const grimoireUI = document.getElementById('grimoireUI');
+  const openBookBtn = document.getElementById('openBookBtn');
+
+  openBookBtn.addEventListener('click', () => {
+    bookCover.style.opacity = '0';
+    bookCover.style.pointerEvents = 'none';
+    setTimeout(() => {
+      bookCover.style.display = 'none';
+      grimoireUI.classList.add('open');
+    }, 800);
+  });
+
+  // Initialize App
   async function init() {
     await openDB();
-    await renderSpellGrid();
-    console.log('✨ Grimoire awakened! Spells persist forever in IndexedDB');
+    await renderSpellPages();
+    console.log('📖 Ancient Grimoire Awakened! Spells persist forever in IndexedDB.');
   }
 
   // Event Listeners
@@ -816,9 +804,9 @@
     });
 
     clearAllBtn.addEventListener('click', async () => {
-      if (confirm('⚠️ THIS WILL BANISH ALL SPELLS FOREVER! Continue?')) {
+      if (confirm('⚠️ THIS WILL BANISH ALL SPELLS FROM THE GRIMOIRE! Continue?')) {
         await clearAllSpells();
-        await renderSpellGrid();
+        await renderSpellPages();
       }
     });
 
@@ -831,13 +819,13 @@
       }
     });
 
-    // Drag and Drop
-    const ritualCircle = document.querySelector('.ritual-circle');
-    ritualCircle.addEventListener('dragover', (e) => { e.preventDefault(); ritualCircle.style.border = '3px solid cyan'; });
-    ritualCircle.addEventListener('dragleave', () => { ritualCircle.style.border = ''; });
-    ritualCircle.addEventListener('drop', async (e) => {
+    // Drag and Drop on Ritual Altar
+    const altar = document.querySelector('.ritual-altar');
+    altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.border = '3px solid cyan'; });
+    altar.addEventListener('dragleave', () => { altar.style.border = ''; });
+    altar.addEventListener('drop', async (e) => {
       e.preventDefault();
-      ritualCircle.style.border = '';
+      altar.style.border = '';
       const dropped = Array.from(e.dataTransfer.files);
       if (dropped.length) await addFileSpell(dropped);
     });
