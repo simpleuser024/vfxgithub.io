@@ -2,16 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>3D Anime Grimoire | Spell VFX Library</title>
-  <!-- Three.js CDN -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
-      }
-    }
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permanent VFX Library - IndexedDB Storage</title>
   <style>
     * {
       margin: 0;
@@ -20,31 +12,11 @@
     }
 
     body {
-      font-family: 'Poppins', 'Segoe UI', 'Orbitron', 'Cinema', monospace;
-      overflow-x: hidden;
-      background-color: #050510;
-      color: #fff;
-    }
-
-    /* 3D canvas background */
-    #canvas-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      display: block;
-    }
-
-    /* UI overlay */
-    .ui-overlay {
-      position: relative;
-      z-index: 10;
+      font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0f2a 0%, #020210 100%);
       min-height: 100vh;
-      padding: 1.5rem;
-      background: radial-gradient(circle at 20% 30%, rgba(5,5,30,0.6), rgba(0,0,0,0.75));
-      backdrop-filter: blur(3px);
+      color: white;
+      padding: 1rem;
     }
 
     .container {
@@ -52,658 +24,607 @@
       margin: 0 auto;
     }
 
-    /* header anime spell style */
-    .grimoire-header {
+    /* Header */
+    .header {
       text-align: center;
+      padding: 2rem 0;
+      background: rgba(0,0,0,0.5);
+      border-radius: 30px;
       margin-bottom: 2rem;
-      animation: floatGlow 3s infinite alternate;
+      backdrop-filter: blur(10px);
     }
 
-    @keyframes floatGlow {
-      0% { text-shadow: 0 0 5px cyan, 0 0 10px magenta; transform: translateY(0px);}
-      100% { text-shadow: 0 0 20px #ff66ff, 0 0 30px #00ffff; transform: translateY(-8px);}
-    }
-
-    .title {
-      font-size: 3.5rem;
-      font-weight: 900;
-      background: linear-gradient(135deg, #ff66cc, #00ffff, #ffcc44);
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #00ffff, #ff66cc);
       background-clip: text;
       -webkit-background-clip: text;
       color: transparent;
-      letter-spacing: 4px;
     }
 
     .sub {
-      color: #ccddff;
-      background: rgba(0,0,0,0.5);
-      display: inline-block;
-      padding: 0.3rem 1.5rem;
-      border-radius: 40px;
-      backdrop-filter: blur(8px);
+      color: #aaddff;
       margin-top: 0.5rem;
     }
 
-    /* add spell section */
-    .spell-add-panel {
-      background: rgba(20, 10, 35, 0.7);
-      backdrop-filter: blur(16px);
-      border-radius: 60px;
-      padding: 1.2rem 2rem;
-      margin-bottom: 2rem;
-      border: 1px solid rgba(0, 255, 255, 0.5);
-      box-shadow: 0 0 25px rgba(0,255,255,0.2);
+    /* Storage Info */
+    .storage-info {
+      background: rgba(0,0,0,0.6);
+      border-radius: 20px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
       display: flex;
+      justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap;
-      justify-content: center;
       gap: 1rem;
     }
 
-    .spell-input {
-      background: rgba(0,0,0,0.7);
-      border: 1px solid #ff66cc;
-      padding: 0.7rem 1.2rem;
-      border-radius: 50px;
-      color: white;
-      font-family: monospace;
-      width: 220px;
+    .badge {
+      background: #00aacc;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
     }
 
-    .spell-input-url {
-      width: 280px;
+    /* Add Section */
+    .add-section {
+      background: rgba(20, 15, 45, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 30px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(0,255,255,0.3);
     }
 
-    .anime-btn {
-      background: linear-gradient(145deg, #2a1a5e, #120a30);
-      border: none;
-      padding: 0.7rem 1.5rem;
-      border-radius: 50px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s;
-      box-shadow: 0 0 15px rgba(255,0,200,0.3);
-    }
-
-    .anime-btn:hover {
-      transform: scale(1.05);
-      background: #3a2a7a;
-      box-shadow: 0 0 25px cyan;
-    }
-
-    /* file upload zone */
-    .upload-zone {
-      background: rgba(0,0,0,0.5);
-      border-radius: 50px;
-      padding: 0.5rem 1rem;
+    .form-group {
       display: flex;
-      align-items: center;
-      gap: 12px;
       flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
 
-    /* file grid - spell cards */
-    .spell-grid {
+    input, button {
+      padding: 0.8rem 1.2rem;
+      border-radius: 50px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    input {
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #00ffff;
+      color: white;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #1f2a5e, #0a0f30);
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+      font-weight: bold;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px cyan;
+    }
+
+    .file-input-wrapper {
+      background: rgba(0,0,0,0.7);
+      border-radius: 50px;
+      padding: 0.3rem 1rem;
+      border: 1px solid #ff66cc;
+      flex: 1;
+    }
+
+    /* File Grid */
+    .file-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1.5rem;
-      margin-top: 2rem;
+      margin-top: 1rem;
     }
 
-    .spell-card {
+    .file-card {
       background: rgba(15, 10, 35, 0.8);
-      backdrop-filter: blur(12px);
-      border-radius: 28px;
-      padding: 1.2rem;
-      border: 1px solid rgba(255, 100, 200, 0.5);
-      transition: all 0.3s ease;
-      animation: cardPulse 3s infinite alternate;
-      transform-style: preserve-3d;
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 1rem;
+      border: 1px solid rgba(0,255,255,0.3);
+      transition: 0.3s;
+      position: relative;
     }
 
-    @keyframes cardPulse {
-      0% { border-color: rgba(0,255,255,0.3); box-shadow: 0 0 12px rgba(0,255,255,0.2);}
-      100% { border-color: rgba(255,80,200,0.8); box-shadow: 0 0 25px rgba(255,0,200,0.4);}
+    .file-card:hover {
+      transform: translateY(-5px);
+      border-color: #ff66cc;
+      box-shadow: 0 0 20px rgba(255,0,200,0.3);
     }
 
-    .spell-card:hover {
-      transform: translateY(-10px) scale(1.02);
-      background: rgba(30, 20, 60, 0.9);
-      border-color: cyan;
+    .file-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
     }
 
-    .spell-icon {
-      font-size: 2.2rem;
-      filter: drop-shadow(0 0 8px magenta);
-      display: inline-block;
-      animation: spinSlow 5s infinite linear;
-    }
-
-    @keyframes spinSlow {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
-    }
-
-    .spell-name {
+    .file-name {
       font-weight: bold;
       font-size: 1.1rem;
       word-break: break-word;
-      color: #ffddff;
+      margin-bottom: 0.3rem;
     }
 
-    .spell-detail {
+    .file-meta {
       font-size: 0.7rem;
       color: #aaccff;
-      font-family: monospace;
-      margin-top: 5px;
+      margin-bottom: 0.8rem;
     }
 
-    .card-actions {
+    .file-actions {
       display: flex;
-      gap: 12px;
-      margin-top: 12px;
-      justify-content: flex-end;
+      gap: 0.8rem;
+      margin-top: 0.8rem;
     }
 
-    .spell-open, .spell-remove, .spell-edit {
-      border: none;
-      padding: 0.4rem 1rem;
-      border-radius: 30px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 0.75rem;
+    .file-actions button {
+      flex: 1;
+      padding: 0.4rem;
+      font-size: 0.8rem;
     }
 
-    .spell-open { background: #00aacc; color: white; }
-    .spell-open:hover { background: cyan; color: black; box-shadow: 0 0 12px cyan;}
+    .btn-open { background: #00aacc; }
+    .btn-delete { background: #cc3366; }
+    .btn-download { background: #7a3a9a; }
 
-    .spell-edit { background: #7a3a9a; color: white; }
-    .spell-remove { background: #a03366; color: white; }
-
-    .empty-grimoire {
+    .empty-state {
       text-align: center;
       padding: 3rem;
       background: rgba(0,0,0,0.5);
-      border-radius: 60px;
+      border-radius: 30px;
     }
 
-    .footer-note {
+    /* Export/Import Section */
+    .backup-section {
+      background: rgba(0,0,0,0.5);
+      border-radius: 20px;
+      padding: 1rem;
       margin-top: 2rem;
-      text-align: center;
-      font-size: 0.75rem;
-      color: #99aaff;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     @media (max-width: 700px) {
-      .title { font-size: 2rem; }
-      .spell-input { width: 100%; }
+      h1 { font-size: 1.5rem; }
+      .form-group { flex-direction: column; }
     }
   </style>
 </head>
 <body>
+<div class="container">
+  <div class="header">
+    <h1>🎴 PERMANENT VFX LIBRARY 🎴</h1>
+    <div class="sub">⚡ IndexedDB Storage | Files Persist Forever | Export/Import Backup ⚡</div>
+  </div>
 
-<div id="canvas-container"></div>
+  <div class="storage-info">
+    <span>📀 Storage: <strong id="storageStatus">IndexedDB Active</strong></span>
+    <span>📁 Total Files: <strong id="fileCount">0</strong></span>
+    <button id="clearAllBtn" style="background:#cc3366; padding:0.3rem 1rem;">🗑️ Clear All</button>
+  </div>
 
-<div class="ui-overlay">
-  <div class="container">
-    <div class="grimoire-header">
-      <div class="title">⚡ 3D ANIME GRIMOIRE ⚡</div>
-      <div class="sub">✦ SPELL VFX LIBRARY | CLASS BREAK | DIMENSIONAL FILE STORAGE ✦</div>
-    </div>
-
-    <!-- Add Spell Section -->
-    <div class="spell-add-panel">
-      <div class="upload-zone">
-        <span>📁 ADD FILE:</span>
-        <input type="file" id="fileUpload" multiple style="background:black; color:cyan; border-radius:50px; padding:5px;">
-        <button id="uploadBtn" class="anime-btn">⬆️ UPLOAD & SAVE</button>
+  <div class="add-section">
+    <div class="form-group">
+      <div class="file-input-wrapper">
+        📂 <input type="file" id="fileInput" multiple style="display:inline; width:auto; background:transparent; border:none;">
       </div>
-      <div style="display: flex; gap:8px; flex-wrap:wrap;">
-        <input type="text" id="spellName" class="spell-input" placeholder="Spell name (e.g., Dragon Slayer)">
-        <input type="text" id="spellUrl" class="spell-input spell-input-url" placeholder="URL or relative path (e.g., ./files/shader.html)">
-        <button id="addUrlBtn" class="anime-btn">🔮 ADD SPELL LINK</button>
-      </div>
+      <button id="uploadBtn">⬆️ UPLOAD & SAVE PERMANENTLY</button>
     </div>
+    
+    <div class="form-group">
+      <input type="text" id="urlName" placeholder="File Name (e.g., My Shader)">
+      <input type="text" id="urlPath" placeholder="URL or Relative Path (e.g., ./files/shader.html)">
+      <button id="addUrlBtn">🔗 ADD LINK</button>
+    </div>
+  </div>
 
-    <!-- Spell Grid Container -->
-    <div id="spellGrid" class="spell-grid"></div>
-    <div class="footer-note">
-      🧙‍♂️ ALL FILES & LINKS SAVED TO LOCALSTORAGE → PERSISTS FOREVER | GITHUB FRIENDLY | 3D BACKGROUND WITH ANIME SPELLS
-    </div>
+  <div id="fileGrid" class="file-grid">
+    <div class="empty-state">✨ Loading your grimoire... ✨</div>
+  </div>
+
+  <div class="backup-section">
+    <button id="exportBtn" style="background:#2a5e3a;">💾 EXPORT ALL DATA (Backup)</button>
+    <button id="importBtn" style="background:#5e3a2a;">📥 IMPORT BACKUP</button>
+    <input type="file" id="importFile" accept=".json" style="display:none;">
+    <span style="font-size:0.8rem; color:#aaa;">⚠️ Backup saves all files - restore on any device</span>
   </div>
 </div>
 
-<script type="module">
-  import * as THREE from 'three';
-
-  // ---------- 3D ANIME BACKGROUND WITH MAGICAL OBJECTS ----------
-  const container = document.getElementById('canvas-container');
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x020218);
-  scene.fog = new THREE.FogExp2(0x020218, 0.003);
-
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 3, 12);
-  camera.lookAt(0, 0, 0);
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = true;
-  container.appendChild(renderer.domElement);
-
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0x404060);
-  scene.add(ambientLight);
-  const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-  mainLight.position.set(5, 10, 7);
-  mainLight.castShadow = true;
-  scene.add(mainLight);
-  const backLight = new THREE.PointLight(0xff44cc, 0.5);
-  backLight.position.set(-2, 3, -4);
-  scene.add(backLight);
-  const colorLight = new THREE.PointLight(0x44aaff, 0.6);
-  colorLight.position.set(3, 2, 4);
-  scene.add(colorLight);
-
-  // Anime magical floating orbs & crystals
-  const group = new THREE.Group();
+<script>
+  // ==================== INDEXEDDB PERMANENT STORAGE ====================
+  // Ye system files ko IndexedDB mein store karega - ye localStorage se zyada permanent hai
+  // aur zyada storage (usually 50MB to unlimited) allow karta hai
   
-  // central floating crystal
-  const crystalGeo = new THREE.IcosahedronGeometry(0.7, 0);
-  const crystalMat = new THREE.MeshStandardMaterial({ color: 0xff44aa, emissive: 0x441133, roughness: 0.2, metalness: 0.8 });
-  const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-  crystal.castShadow = true;
-  crystal.position.set(0, 0.5, 0);
-  group.add(crystal);
-
-  // floating rings
-  const ringGeo = new THREE.TorusGeometry(1.1, 0.05, 64, 200);
-  const ringMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x006666 });
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.rotation.x = Math.PI / 2;
-  group.add(ring);
+  const DB_NAME = 'VFX_Grimoire_DB';
+  const DB_VERSION = 2;
+  const STORE_NAME = 'files';
   
-  const ring2Geo = new THREE.TorusGeometry(1.4, 0.04, 64, 200);
-  const ring2Mat = new THREE.MeshStandardMaterial({ color: 0xff66cc, emissive: 0x331122 });
-  const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
-  ring2.rotation.z = Math.PI / 3;
-  group.add(ring2);
+  let db = null;
   
-  // floating small spheres (mana orbs)
-  const orbCount = 12;
-  const orbs = [];
-  for (let i = 0; i < orbCount; i++) {
-    const orbGeo = new THREE.SphereGeometry(0.2, 16, 16);
-    const orbMat = new THREE.MeshStandardMaterial({ color: 0xffaa88, emissive: 0xff2288 });
-    const orb = new THREE.Mesh(orbGeo, orbMat);
-    const angle = (i / orbCount) * Math.PI * 2;
-    const radius = 1.9;
-    orb.userData = { angle, radius, speed: 0.01 + Math.random() * 0.01, yOffset: Math.sin(i) * 0.5 };
-    orb.position.x = Math.cos(angle) * radius;
-    orb.position.z = Math.sin(angle) * radius;
-    orb.position.y = Math.sin(angle * 2) * 0.5;
-    group.add(orb);
-    orbs.push(orb);
-  }
-  
-  // floating particles (stars)
-  const starField = new THREE.Points(
-    new THREE.BufferGeometry(),
-    new THREE.PointsMaterial({ color: 0xaaffff, size: 0.08 })
-  );
-  const starCount = 800;
-  const starPositions = new Float32Array(starCount * 3);
-  for (let i = 0; i < starCount; i++) {
-    starPositions[i*3] = (Math.random() - 0.5) * 200;
-    starPositions[i*3+1] = (Math.random() - 0.5) * 80;
-    starPositions[i*3+2] = (Math.random() - 0.5) * 100 - 50;
-  }
-  starField.geometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-  scene.add(starField);
-  
-  scene.add(group);
-  
-  // rotating magical runes (simple rings)
-  const runeRing = new THREE.Mesh(
-    new THREE.TorusGeometry(1.7, 0.03, 32, 200),
-    new THREE.MeshStandardMaterial({ color: 0xff44ff, emissive: 0x331133 })
-  );
-  runeRing.rotation.x = Math.PI / 2;
-  runeRing.rotation.z = Math.PI / 4;
-  scene.add(runeRing);
-  
-  // floating glowing particles around crystal
-  const glowParticles = [];
-  for (let i = 0; i < 300; i++) {
-    const particleGeo = new THREE.SphereGeometry(0.04, 6, 6);
-    const particleMat = new THREE.MeshStandardMaterial({ color: 0xffaaaa, emissive: 0xff44aa });
-    const particle = new THREE.Mesh(particleGeo, particleMat);
-    particle.userData = {
-      radius: 1.2 + Math.random() * 1.5,
-      angleH: Math.random() * Math.PI * 2,
-      angleV: Math.random() * Math.PI * 2,
-      speed: 0.005 + Math.random() * 0.01
-    };
-    group.add(particle);
-    glowParticles.push(particle);
-  }
-  
-  let time3d = 0;
-  
-  function animate3d() {
-    requestAnimationFrame(animate3d);
-    time3d += 0.012;
-    
-    crystal.rotation.y = time3d * 0.5;
-    crystal.rotation.x = Math.sin(time3d * 0.7) * 0.3;
-    ring.rotation.z += 0.008;
-    ring2.rotation.x += 0.005;
-    ring2.rotation.y += 0.007;
-    runeRing.rotation.y += 0.003;
-    runeRing.rotation.x = Math.PI / 2 + Math.sin(time3d * 0.4) * 0.1;
-    
-    orbs.forEach((orb, idx) => {
-      const data = orb.userData;
-      const newAngle = data.angle + data.speed;
-      orb.position.x = Math.cos(newAngle) * data.radius;
-      orb.position.z = Math.sin(newAngle) * data.radius;
-      orb.position.y = Math.sin(newAngle * 2) * 0.6 + Math.sin(time3d) * 0.2;
-      orb.userData.angle = newAngle;
-    });
-    
-    glowParticles.forEach(p => {
-      const d = p.userData;
-      d.angleH += d.speed;
-      d.angleV += d.speed * 0.7;
-      p.position.x = Math.sin(d.angleH) * Math.cos(d.angleV) * d.radius;
-      p.position.z = Math.cos(d.angleH) * Math.sin(d.angleV) * d.radius;
-      p.position.y = Math.sin(d.angleV) * d.radius * 0.8;
-    });
-    
-    starField.rotation.y += 0.0005;
-    starField.rotation.x += 0.0003;
-    
-    camera.position.x += (0 - camera.position.x) * 0.03;
-    camera.position.y += (Math.sin(time3d * 0.2) * 0.2 - camera.position.y) * 0.03;
-    camera.lookAt(0, 0.5, 0);
-    
-    renderer.render(scene, camera);
-  }
-  
-  animate3d();
-  
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-  
-  // ---------- PERSISTENT FILE/LIBRARY SYSTEM (GITHUB COMPATIBLE) ----------
-  // data structure: items = { id, name, type, sizeDisplay, isFile, fileBase64, urlPath, timestamp }
-  // stored in localStorage under "anime_grimoire_spells"
-  
-  class GrimoireLibrary {
-    constructor() {
-      this.items = [];
-      this.loadFromLocalStorage();
-    }
-    
-    loadFromLocalStorage() {
-      const stored = localStorage.getItem('anime_grimoire_spells');
-      if (stored) {
-        try {
-          this.items = JSON.parse(stored);
-          // rehydrate blob urls for file items
-          this.rehydrateBlobs();
-        } catch(e) { this.items = []; }
-      }
-      if (!this.items.length) {
-        // add demo spell
-        this.addDemoSpell();
-      }
-      this.save();
-    }
-    
-    addDemoSpell() {
-      this.items.push({
-        id: 'demo-' + Date.now(),
-        name: '✨ Class Break - Meteor Shower ✨',
-        urlPath: 'https://example.com/vfx-spell',
-        isFile: false,
-        type: 'url',
-        sizeDisplay: '🔗 Spell Link',
-        timestamp: Date.now()
-      });
-    }
-    
-    rehydrateBlobs() {
-      for (let item of this.items) {
-        if (item.isFile && item.fileBase64) {
-          const blob = this.base64ToBlob(item.fileBase64, item.mimeType);
-          item.blobUrl = URL.createObjectURL(blob);
+  // Open IndexedDB
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        db = request.result;
+        resolve(db);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          store.createIndex('name', 'name', { unique: false });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
         }
-      }
+      };
+    });
+  }
+  
+  // Save file to IndexedDB
+  async function saveFile(fileData) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(fileData);
+      request.onsuccess = () => resolve(fileData);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  
+  // Get all files
+  async function getAllFiles() {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  
+  // Delete file
+  async function deleteFile(id) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+  
+  // Clear all files
+  async function clearAllFiles() {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+  
+  // Convert file to base64
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  // Base64 to Blob
+  function base64ToBlob(base64, mimeType) {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+  }
+  
+  // Format file size
+  function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+  
+  // Get file icon based on extension
+  function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+      html: '🌐', htm: '🌐', css: '🎨', js: '⚡', jsx: '⚡',
+      png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🎨',
+      mp4: '🎥', webm: '🎥', mp3: '🎵', json: '🔧', pdf: '📕',
+      txt: '📄', md: '📝', zip: '📦', rar: '📦'
+    };
+    return icons[ext] || '🎴';
+  }
+  
+  // Generate unique ID
+  function generateId() {
+    return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  // Render file grid
+  async function renderGrid() {
+    const files = await getAllFiles();
+    const grid = document.getElementById('fileGrid');
+    const fileCountSpan = document.getElementById('fileCount');
+    
+    fileCountSpan.textContent = files.length;
+    
+    if (files.length === 0) {
+      grid.innerHTML = `<div class="empty-state">✨ No files yet! Upload or add links above ✨<br><span style="font-size:0.8rem;">Files are saved permanently in IndexedDB</span></div>`;
+      return;
     }
     
-    base64ToBlob(base64, mime) {
-      const byteChars = atob(base64);
-      const byteNums = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-      const byteArray = new Uint8Array(byteNums);
-      return new Blob([byteArray], { type: mime || 'application/octet-stream' });
+    grid.innerHTML = files.map(file => `
+      <div class="file-card" data-id="${file.id}">
+        <div class="file-icon">${getFileIcon(file.name)}</div>
+        <div class="file-name">${escapeHtml(file.name)}</div>
+        <div class="file-meta">
+          ${file.isFile ? `📀 ${file.sizeDisplay}` : '🔗 External Link'}<br>
+          📅 ${new Date(file.timestamp).toLocaleString()}
+        </div>
+        <div class="file-actions">
+          <button class="btn-open" onclick="window.openFile('${file.id}')">🔓 OPEN</button>
+          <button class="btn-download" onclick="window.downloadFile('${file.id}')">💾 DOWNLOAD</button>
+          <button class="btn-delete" onclick="window.deleteFileById('${file.id}')">🗑️ DEL</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+  
+  // Open file
+  window.openFile = async (id) => {
+    const files = await getAllFiles();
+    const file = files.find(f => f.id === id);
+    if (!file) return;
+    
+    if (file.isFile && file.fileBase64) {
+      const blob = base64ToBlob(file.fileBase64, file.mimeType);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } else if (file.urlPath) {
+      window.open(file.urlPath, '_blank');
+    } else {
+      alert('No valid content to open');
+    }
+  };
+  
+  // Download file
+  window.downloadFile = async (id) => {
+    const files = await getAllFiles();
+    const file = files.find(f => f.id === id);
+    if (!file || !file.isFile || !file.fileBase64) {
+      alert('Only uploaded files can be downloaded');
+      return;
     }
     
-    save() {
-      const toStore = this.items.map(item => {
-        const copy = { ...item };
-        delete copy.blobUrl;
-        return copy;
-      });
-      localStorage.setItem('anime_grimoire_spells', JSON.stringify(toStore));
-      this.renderGrid();
+    const blob = base64ToBlob(file.fileBase64, file.mimeType);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  
+  // Delete file
+  window.deleteFileById = async (id) => {
+    if (confirm('Delete this file permanently?')) {
+      await deleteFile(id);
+      await renderGrid();
     }
-    
-    async addFile(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const base64 = e.target.result.split(',')[1];
-          const newItem = {
-            id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-            name: file.name,
-            sizeDisplay: this.formatSize(file.size),
-            isFile: true,
-            mimeType: file.type,
-            fileBase64: base64,
-            urlPath: null,
-            timestamp: Date.now()
-          };
-          const blob = this.base64ToBlob(base64, file.type);
-          newItem.blobUrl = URL.createObjectURL(blob);
-          this.items.push(newItem);
-          this.save();
-          resolve(newItem);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-    
-    addUrlEntry(name, url) {
-      if (!name.trim()) name = "Unnamed Spell";
-      if (!url.trim()) url = "#";
-      const newItem = {
-        id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-        name: name.trim(),
-        urlPath: url.trim(),
-        isFile: false,
-        sizeDisplay: "🌐 Dimensional Link",
+  };
+  
+  // Upload files
+  async function uploadFiles(files) {
+    for (const file of files) {
+      const base64 = await fileToBase64(file);
+      const fileData = {
+        id: generateId(),
+        name: file.name,
+        size: file.size,
+        sizeDisplay: formatSize(file.size),
+        mimeType: file.type,
+        fileBase64: base64,
+        isFile: true,
         timestamp: Date.now()
       };
-      this.items.push(newItem);
-      this.save();
-      return newItem;
+      await saveFile(fileData);
     }
-    
-    editItemName(id, newName) {
-      const item = this.items.find(i => i.id === id);
-      if (item) {
-        item.name = newName.trim() || item.name;
-        this.save();
-      }
-    }
-    
-    removeItem(id) {
-      const idx = this.items.findIndex(i => i.id === id);
-      if (idx !== -1) {
-        const item = this.items[idx];
-        if (item.blobUrl) URL.revokeObjectURL(item.blobUrl);
-        this.items.splice(idx, 1);
-        this.save();
-      }
-    }
-    
-    openItem(id) {
-      const item = this.items.find(i => i.id === id);
-      if (!item) return;
-      let url = null;
-      if (item.isFile && item.blobUrl) {
-        url = item.blobUrl;
-      } else if (item.urlPath) {
-        url = item.urlPath;
-      }
-      if (url && url !== "#") {
-        window.open(url, '_blank');
-      } else {
-        alert("⚠️ No valid path or file data. Edit the spell or re-upload.");
-      }
-    }
-    
-    formatSize(bytes) {
-      if (!bytes) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
-    
-    renderGrid() {
-      const grid = document.getElementById('spellGrid');
-      if (!grid) return;
-      if (this.items.length === 0) {
-        grid.innerHTML = `<div class="empty-grimoire"><h3>🌀 No Spells Yet... Add Files or Links! 🌀</h3><p>Upload HTML files or paste URLs — they will persist forever in your Grimoire.</p></div>`;
-        return;
-      }
-      let html = '';
-      for (const item of this.items) {
-        const icon = item.isFile ? '📁✨' : '🔮⚡';
-        const typeLabel = item.isFile ? 'FILE STORED' : 'LINK SPELL';
-        html += `
-          <div class="spell-card" data-id="${item.id}">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span class="spell-icon">${icon}</span>
-              <span class="spell-detail">${typeLabel}</span>
-            </div>
-            <div class="spell-name" id="spell-name-${item.id}">${this.escapeHtml(item.name)}</div>
-            <div class="spell-detail">📀 ${item.sizeDisplay || '—'}</div>
-            <div class="card-actions">
-              <button class="spell-open" data-id="${item.id}">⚡ OPEN SPELL</button>
-              <button class="spell-edit" data-id="${item.id}">✏️ RENAME</button>
-              <button class="spell-remove" data-id="${item.id}">🗑️ DELETE</button>
-            </div>
-          </div>
-        `;
-      }
-      grid.innerHTML = html;
-      
-      // attach events
-      grid.querySelectorAll('.spell-open').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = btn.getAttribute('data-id');
-          this.openItem(id);
-        });
-      });
-      grid.querySelectorAll('.spell-remove').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = btn.getAttribute('data-id');
-          this.removeItem(id);
-        });
-      });
-      grid.querySelectorAll('.spell-edit').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = btn.getAttribute('data-id');
-          const currentNameSpan = document.getElementById(`spell-name-${id}`);
-          const oldName = currentNameSpan ? currentNameSpan.innerText : '';
-          const newName = prompt("✏️ Rename Spell / File:", oldName);
-          if (newName && newName.trim()) this.editItemName(id, newName);
-        });
-      });
-    }
-    
-    escapeHtml(str) {
-      return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-      });
-    }
+    await renderGrid();
   }
   
-  const grimoire = new GrimoireLibrary();
-  grimoire.renderGrid();
+  // Add URL link
+  async function addUrlLink(name, url) {
+    if (!name.trim()) name = 'Unnamed Link';
+    if (!url.trim()) url = '#';
+    
+    const linkData = {
+      id: generateId(),
+      name: name.trim(),
+      urlPath: url.trim(),
+      isFile: false,
+      timestamp: Date.now(),
+      sizeDisplay: '🔗 Link'
+    };
+    await saveFile(linkData);
+    await renderGrid();
+  }
   
-  // UI elements
-  const fileInput = document.getElementById('fileUpload');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const spellNameInput = document.getElementById('spellName');
-  const spellUrlInput = document.getElementById('spellUrl');
-  const addUrlBtn = document.getElementById('addUrlBtn');
+  // Export all data as JSON
+  async function exportData() {
+    const files = await getAllFiles();
+    const exportObj = {
+      version: 2,
+      exportDate: new Date().toISOString(),
+      files: files
+    };
+    
+    const jsonStr = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vfx_grimoire_backup_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    alert('✨ Backup exported! Save this file safely. You can import it on any device.');
+  }
   
-  uploadBtn.addEventListener('click', async () => {
-    if (!fileInput.files.length) {
-      alert("✨ Please select files to add to grimoire!");
-      return;
-    }
-    const files = Array.from(fileInput.files);
-    for (const f of files) {
-      await grimoire.addFile(f);
-    }
-    fileInput.value = '';
-    grimoire.renderGrid();
-  });
-  
-  addUrlBtn.addEventListener('click', () => {
-    let name = spellNameInput.value.trim();
-    let url = spellUrlInput.value.trim();
-    if (!name && !url) {
-      alert("Enter spell name and URL/path (e.g., ./folder/index.html)");
-      return;
-    }
-    if (!name) name = "Arcane Link";
-    if (!url) url = "#";
-    grimoire.addUrlEntry(name, url);
-    spellNameInput.value = '';
-    spellUrlInput.value = '';
-    grimoire.renderGrid();
-  });
-  
-  // drag drop support
-  const addPanel = document.querySelector('.spell-add-panel');
-  if (addPanel) {
-    addPanel.addEventListener('dragover', (e) => { e.preventDefault(); addPanel.style.border = '2px solid cyan'; });
-    addPanel.addEventListener('dragleave', () => { addPanel.style.border = 'none'; });
-    addPanel.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      addPanel.style.border = 'none';
-      const droppedFiles = Array.from(e.dataTransfer.files);
-      for (const f of droppedFiles) await grimoire.addFile(f);
-      grimoire.renderGrid();
+  // Import data from JSON
+  async function importData(jsonFile) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          const importedFiles = data.files || [];
+          
+          if (importedFiles.length === 0) {
+            alert('No files found in backup');
+            resolve();
+            return;
+          }
+          
+          let importedCount = 0;
+          for (const file of importedFiles) {
+            // Generate new ID to avoid conflicts
+            const newFile = { ...file, id: generateId() };
+            await saveFile(newFile);
+            importedCount++;
+          }
+          
+          await renderGrid();
+          alert(`✅ Imported ${importedCount} files successfully!`);
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsText(jsonFile);
     });
   }
   
-  console.log("%c✨ 3D ANIME GRIMOIRE ACTIVE | All files & links saved to localStorage | Perfect for GitHub Pages ✨", "color: cyan; font-size: 14px");
-  console.log("%c📀 You can add any HTML files or relative paths — they persist across sessions and devices (same browser).", "color: #ffaaff");
+  // Initialize
+  async function init() {
+    try {
+      await openDB();
+      await renderGrid();
+      console.log('✅ IndexedDB initialized - Files will persist forever!');
+    } catch (err) {
+      console.error('Database error:', err);
+      document.getElementById('fileGrid').innerHTML = `<div class="empty-state">⚠️ Error loading database. Your browser may not support IndexedDB.</div>`;
+    }
+  }
+  
+  // Event Listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const addUrlBtn = document.getElementById('addUrlBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    
+    uploadBtn.addEventListener('click', async () => {
+      if (fileInput.files.length === 0) {
+        alert('Please select files to upload');
+        return;
+      }
+      await uploadFiles(Array.from(fileInput.files));
+      fileInput.value = '';
+    });
+    
+    addUrlBtn.addEventListener('click', async () => {
+      const name = document.getElementById('urlName').value;
+      const url = document.getElementById('urlPath').value;
+      if (!name && !url) {
+        alert('Enter name and URL/path');
+        return;
+      }
+      await addUrlLink(name, url);
+      document.getElementById('urlName').value = '';
+      document.getElementById('urlPath').value = '';
+    });
+    
+    clearAllBtn.addEventListener('click', async () => {
+      if (confirm('⚠️ WARNING: This will delete ALL files permanently! Continue?')) {
+        await clearAllFiles();
+        await renderGrid();
+        alert('All files deleted.');
+      }
+    });
+    
+    exportBtn.addEventListener('click', exportData);
+    
+    importBtn.addEventListener('click', () => {
+      importFile.click();
+    });
+    
+    importFile.addEventListener('change', async (e) => {
+      if (e.target.files.length > 0) {
+        await importData(e.target.files[0]);
+        importFile.value = '';
+      }
+    });
+    
+    // Drag and drop support
+    const addSection = document.querySelector('.add-section');
+    addSection.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      addSection.style.border = '2px solid cyan';
+    });
+    addSection.addEventListener('dragleave', () => {
+      addSection.style.border = 'none';
+    });
+    addSection.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      addSection.style.border = 'none';
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      if (droppedFiles.length) {
+        await uploadFiles(droppedFiles);
+      }
+    });
+  });
 </script>
 </body>
 </html>
